@@ -1,0 +1,71 @@
+{
+  "name": "@kit/test",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./database": {
+      "types": "./dist/database/index.d.ts",
+      "import": "./dist/database/index.js"
+    },
+    "./helpers": {
+      "types": "./dist/helpers/index.d.ts",
+      "import": "./dist/helpers/index.js"
+    },
+    "./setup/redis-mock": {
+      "types": "./dist/setup/redis-mock.d.ts",
+      "import": "./dist/setup/redis-mock.js"
+    },
+    "./setup/bull-mock": {
+      "types": "./dist/setup/bull-mock.d.ts",
+      "import": "./dist/setup/bull-mock.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "lint": "eslint .",
+    "check-types": "tsc --noEmit",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "fastify-plugin": "^5.1.0",
+    "kysely": "^0.28.16",
+    "kysely-pglite": "^0.6.1",
+    "@electric-sql/pglite": "^0.2.17"
+  },
+  "devDependencies": {
+    "@kit/eslint-config": "workspace:*",
+    "@kit/ts-config": "workspace:*",
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.4",
+    "fastify": "^5.8.4",
+    "ioredis-mock": "^8.9.0",
+    "@fastify/redis": "^7.2.0",
+    "@fastify/type-provider-typebox": "^6.1.0"
+  },
+  "peerDependencies": {
+    "vitest": "^4.0.0",
+    "fastify": "^5.0.0",
+    "ioredis-mock": "^8.0.0",
+    "@fastify/redis": "^7.0.0"
+  },
+  "peerDependenciesMeta": {
+    "ioredis-mock": {
+      "optional": true
+    },
+    "@fastify/redis": {
+      "optional": true
+    }
+  }
+}

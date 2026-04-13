@@ -1,0 +1,9 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/kit/config" },
+    { "path": "./packages/kit/core" },
+    { "path": "./packages/kit/jobs" },
+    { "path": "./packages/kit/schemas" }
+  ]
+}

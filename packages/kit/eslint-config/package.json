@@ -1,0 +1,26 @@
+{
+  "name": "@kit/eslint-config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./eslint.config.mjs",
+  "exports": {
+    ".": "./eslint.config.mjs"
+  },
+  "files": [
+    "eslint.config.mjs"
+  ],
+  "dependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import-x": "^4.16.2",
+    "eslint-plugin-prettier": "^5.4.0",
+    "eslint-plugin-unicorn": "^64.0.0",
+    "globals": "^17.4.0",
+    "prettier": "^3.5.3",
+    "typescript-eslint": "^8.58.1"
+  },
+  "peerDependencies": {
+    "eslint": "^9.22.0 || ^10.0.0"
+  }
+}

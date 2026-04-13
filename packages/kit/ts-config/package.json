@@ -1,0 +1,15 @@
+{
+  "name": "@kit/ts-config",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    "./base": "./tsconfig.base.json",
+    "./node": "./tsconfig.node.json",
+    "./lib": "./tsconfig.lib.json"
+  },
+  "files": [
+    "tsconfig.base.json",
+    "tsconfig.node.json",
+    "tsconfig.lib.json"
+  ]
+}

@@ -1,0 +1,26 @@
+services:
+  postgres:
+    image: postgres:16.9
+    container_name: saas-kit-postgres
+    restart: unless-stopped
+    ports:
+      - '5433:5432'
+    environment:
+      POSTGRES_USER: saaskit
+      POSTGRES_PASSWORD: saaskit
+      POSTGRES_DB: saaskit_dev
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7.4.3
+    container_name: saas-kit-redis
+    restart: unless-stopped
+    ports:
+      - '6380:6379'
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:

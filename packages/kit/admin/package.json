@@ -1,0 +1,76 @@
+{
+  "name": "@kit/admin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./plugin": {
+      "types": "./dist/plugin.d.ts",
+      "import": "./dist/plugin.js"
+    },
+    "./define-resource": {
+      "types": "./dist/define-resource.d.ts",
+      "import": "./dist/define-resource.js"
+    },
+    "./render": {
+      "types": "./dist/render.d.ts",
+      "import": "./dist/render.js"
+    },
+    "./schema": {
+      "types": "./dist/schema/index.d.ts",
+      "import": "./dist/schema/index.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.js"
+    }
+  },
+  "files": [
+    "dist",
+    "assets"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "lint": "eslint .",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/formbody": "^8.0.2",
+    "@kit/auth": "workspace:*",
+    "@kit/authz": "workspace:*",
+    "@kit/core": "workspace:*",
+    "@kit/db": "workspace:*",
+    "@kit/errors": "workspace:*",
+    "@kit/schemas": "workspace:*",
+    "@sinclair/typebox": "^0.34.49",
+    "fastify-plugin": "^5.1.0",
+    "htm": "^3.1.1",
+    "kysely": "^0.28.16",
+    "preact": "^10.26.6",
+    "preact-render-to-string": "^6.5.13",
+    "ts-pattern": "^5.9.0"
+  },
+  "devDependencies": {
+    "@fastify/type-provider-typebox": "^6.1.0",
+    "@kit/eslint-config": "workspace:*",
+    "@kit/ts-config": "workspace:*",
+    "@types/node": "^25.6.0",
+    "fastify": "^5.8.4",
+    "htmx.org": "^2.0.8",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.4"
+  },
+  "peerDependencies": {
+    "fastify": "^5.0.0"
+  }
+}
