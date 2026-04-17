@@ -29,4 +29,17 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     if (results) results.innerHTML = '';
   });
+
+  /* Mirror the autocomplete's display input into its hidden id input on
+     every keystroke. Lets admins paste an id directly without waiting for
+     (or clicking) a dropdown result. Dropdown clicks above overwrite the
+     hidden with the real id, so that path still wins. */
+  document.body.addEventListener('input', function (e) {
+    var display = e.target.closest('.form-autocomplete input[type=text]');
+    if (!display) return;
+    var wrap = display.closest('.form-autocomplete');
+    if (!wrap) return;
+    var hidden = wrap.querySelector('input[type=hidden]');
+    if (hidden) hidden.value = display.value;
+  });
 });

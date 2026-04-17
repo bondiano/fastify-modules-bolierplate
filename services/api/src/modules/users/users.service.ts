@@ -1,8 +1,12 @@
 import { NotFoundException } from '@kit/errors/exceptions';
 
-export const createUsersService = ({
-  usersRepository,
-}: Pick<Dependencies, 'usersRepository'>) => {
+import type { UsersRepository } from './users.repository.ts';
+
+interface UsersServiceDeps {
+  usersRepository: UsersRepository;
+}
+
+export const createUsersService = ({ usersRepository }: UsersServiceDeps) => {
   return {
     findById: async (id: string) => {
       const user = await usersRepository.findById(id);

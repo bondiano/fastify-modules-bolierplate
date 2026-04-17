@@ -12,10 +12,17 @@ import type { WidgetProps } from './text.js';
 export const AutocompleteInput = ({
   field,
   value,
+  displayValue,
   disabled = false,
   resourceName,
 }: WidgetProps): VNode => {
   const current = value === null || value === undefined ? '' : String(value);
+  // Prefer the user's typed search text on re-render; fall back to the
+  // hidden id so a freshly-loaded edit form shows something meaningful.
+  const display =
+    displayValue === null || displayValue === undefined || displayValue === ''
+      ? current
+      : String(displayValue);
   const endpoint = resourceName
     ? `/admin/${resourceName}/_relations/${field.name}`
     : '';
@@ -24,7 +31,7 @@ export const AutocompleteInput = ({
     <input
       type="text"
       name=${`${field.name}__display`}
-      value=${current}
+      value=${display}
       placeholder=${field.placeholder ?? 'Search...'}
       required=${field.required || undefined}
       readonly=${field.readOnly || undefined}

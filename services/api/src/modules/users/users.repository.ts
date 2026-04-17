@@ -1,10 +1,13 @@
 import type { DB } from '#db/schema.ts';
 import type { AuthUser, CreateUserInput, UserStore } from '@kit/auth';
 import { createBaseRepository } from '@kit/db/repository';
+import type { Trx } from '@kit/db/transaction';
 
-export const createUsersRepository = ({
-  transaction,
-}: Pick<Dependencies, 'transaction'>) => {
+interface UsersRepositoryDeps {
+  transaction: Trx<DB>;
+}
+
+export const createUsersRepository = ({ transaction }: UsersRepositoryDeps) => {
   const base = createBaseRepository<DB, 'users'>(transaction, 'users');
 
   return {

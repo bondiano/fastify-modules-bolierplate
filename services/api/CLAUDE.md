@@ -17,6 +17,31 @@ system.
   plain objects.
 - **Small functions**: each function should do one thing. Extract helpers when a
   function exceeds ~20 lines.
+- **No `Pick<Dependencies, ...>` in factories**. Service / repository / client
+  factories must declare a standalone options interface that lists only the
+  deps they consume. Never reference the global `Dependencies` (or Awilix
+  `Cradle`) type inside application code. Awilix's own docs warn that doing so
+  couples your code to a "god type", loses transparency, and breaks inversion
+  of control (see
+  https://github.com/jeffijoe/awilix#infercradlefromcontainer). The only
+  place `Dependencies` may appear is the module's `<name>.module.ts` global
+  augmentation -- that is how the container learns the registration type.
+
+  ```ts
+  // Bad -- couples the service to the global cradle
+  export const createPostsService = ({
+    postsRepository,
+  }: Pick<Dependencies, 'postsRepository'>) => { ... };
+
+  // Good -- standalone options interface, no Awilix leakage
+  interface PostsServiceDeps {
+    postsRepository: PostsRepository;
+  }
+
+  export const createPostsService = ({
+    postsRepository,
+  }: PostsServiceDeps) => { ... };
+  ```
 
 ## Directory
 

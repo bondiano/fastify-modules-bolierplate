@@ -56,14 +56,39 @@ export const verifyCsrfOrThrow = (
 };
 
 /**
- * Strip `_csrf` and `_method` meta fields from a form body and convert
- * empty strings to `null` (HTML forms submit missing values as `""`).
+ * Strip meta fields from a form body and convert empty strings to `null`
+ * (HTML forms submit missing values as `""`).
+ *
+ * Drops:
+ * - `_csrf`, `_method` (form-level meta)
+ * - anything containing `__` (widget-internal UI state, e.g. the
+ *   `<field>__display` input that FK autocomplete widgets add next to
+ *   the real hidden input). These would otherwise trip the autogen
+ *   validator's `additionalProperties: false` and fail silently.
  */
 export const stripMeta = (body: RawBody): Record<string, unknown> => {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(body)) {
     if (k === '_csrf' || k === '_method') continue;
+    if (k.includes('__')) continue;
     out[k] = v === '' ? null : v;
+  }
+  return out;
+};
+
+/**
+ * Build the values object passed back into the form on a validation-error
+ * re-render. Merges the validated data (for real column fields) with any
+ * widget-internal `__display` values from the original body so widgets
+ * like FK autocomplete keep the text the user typed.
+ */
+export const buildRenderValues = (
+  body: RawBody,
+  data: Record<string, unknown>,
+): Record<string, unknown> => {
+  const out: Record<string, unknown> = { ...data };
+  for (const [k, v] of Object.entries(body)) {
+    if (k.includes('__')) out[k] = v;
   }
   return out;
 };
@@ -74,9 +99,19 @@ export const collectErrors = (
   data: unknown,
 ): Record<string, string> => {
   const errors: Record<string, string> = {};
+  let fallback: string | null = null;
   for (const err of Value.Errors(schema, data)) {
     const key = err.path.replace(/^\//, '').replaceAll('/', '.');
-    if (key && !errors[key]) errors[key] = err.message;
+    if (key.length === 0) {
+      fallback ??= err.message;
+      continue;
+    }
+    if (!errors[key]) errors[key] = err.message;
+  }
+  // If every error landed on the root path (or on fields that the form
+  // doesn't render), surface a form-level message so the user gets feedback.
+  if (Object.keys(errors).length === 0 && fallback !== null) {
+    errors['_form'] = fallback;
   }
   return errors;
 };

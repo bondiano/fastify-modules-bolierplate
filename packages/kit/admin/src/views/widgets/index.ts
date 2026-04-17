@@ -47,9 +47,10 @@ export const renderWidget = (
   value: unknown,
   disabled = false,
   resourceName = '',
+  displayValue?: unknown,
 ): VNode => {
   const component = WIDGET_BY_KIND[field.widget];
-  return component({ field, value, disabled, resourceName });
+  return component({ field, value, disabled, resourceName, displayValue });
 };
 
 export { AutocompleteInput } from './autocomplete.js';

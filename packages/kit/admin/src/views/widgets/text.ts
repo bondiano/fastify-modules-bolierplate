@@ -8,6 +8,12 @@ export interface WidgetProps {
   readonly value: unknown;
   readonly disabled?: boolean;
   readonly resourceName?: string;
+  /**
+   * Secondary value for widgets that render more than one input (e.g. the
+   * FK autocomplete ships both `<name>` and `<name>__display`). Used to
+   * preserve what the user typed across validation-error re-renders.
+   */
+  readonly displayValue?: unknown;
 }
 
 export const TextInput = ({

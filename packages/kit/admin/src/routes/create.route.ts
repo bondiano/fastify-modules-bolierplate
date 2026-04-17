@@ -16,6 +16,7 @@ import { Form } from '../views/index.js';
 
 import {
   assertAdminContext,
+  buildRenderValues,
   collectErrors,
   extractCsrf,
   formatRepoError,
@@ -88,7 +89,7 @@ export const createRoute: FastifyPluginAsync = async (fastify) => {
         const form = Form({
           spec,
           mode: 'create',
-          values: data,
+          values: buildRenderValues(body, data),
           errors,
           prefix: ctx.options.prefix,
           csrfToken,
@@ -110,7 +111,7 @@ export const createRoute: FastifyPluginAsync = async (fastify) => {
         const form = Form({
           spec,
           mode: 'create',
-          values: data,
+          values: buildRenderValues(body, data),
           errors: { _form: formatRepoError(error) },
           prefix: ctx.options.prefix,
           csrfToken,
@@ -126,11 +127,9 @@ export const createRoute: FastifyPluginAsync = async (fastify) => {
       const listUrl = safeUrl(`${ctx.options.prefix}/${spec.name}`);
       if (isHtmxRequest(request)) {
         reply.header('hx-redirect', listUrl);
-        reply.status(204);
-        return reply;
+        return reply.status(204).send();
       }
-      reply.redirect(listUrl);
-      return reply;
+      return reply.redirect(listUrl);
     },
   );
 };

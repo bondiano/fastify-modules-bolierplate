@@ -1,5 +1,11 @@
 import { NotFoundException } from '@kit/errors/exceptions';
 
+import type { PostsRepository } from './posts.repository.ts';
+
+interface PostsServiceDeps {
+  postsRepository: PostsRepository;
+}
+
 interface CreatePostInput {
   title: string;
   content: string;
@@ -23,9 +29,7 @@ export interface FindFilteredInput {
   order?: 'asc' | 'desc';
 }
 
-export const createPostsService = ({
-  postsRepository,
-}: Pick<Dependencies, 'postsRepository'>) => {
+export const createPostsService = ({ postsRepository }: PostsServiceDeps) => {
   return {
     findById: async (id: string) => {
       const post = await postsRepository.findById(id);
@@ -43,16 +47,14 @@ export const createPostsService = ({
         content: input.content,
         status: input.status ?? 'draft',
         authorId: input.authorId,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any);
+      });
     },
 
     update: async (id: string, data: UpdatePostInput) => {
       const post = await postsRepository.update(id, {
         ...data,
         updatedAt: new Date().toISOString(),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any);
+      });
       if (!post) throw new NotFoundException(`Post with id '${id}' not found`);
       return post;
     },

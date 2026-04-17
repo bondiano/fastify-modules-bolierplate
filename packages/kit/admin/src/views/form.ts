@@ -36,7 +36,13 @@ const renderField = (
   errors: FormProps['errors'],
   resourceName: string,
 ): VNode => {
-  const widget = renderWidget(field, values[field.name], false, resourceName);
+  const widget = renderWidget(
+    field,
+    values[field.name],
+    false,
+    resourceName,
+    values[`${field.name}__display`],
+  );
   const err = errors[field.name];
   return html`<div class="form-row" data-field=${field.name}>
     <label for=${field.name} class="form-label">

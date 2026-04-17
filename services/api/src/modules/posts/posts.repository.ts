@@ -4,6 +4,11 @@ import {
   createSoftDeleteBulkOperations,
   applySearch,
 } from '@kit/db/runtime';
+import type { Trx } from '@kit/db/transaction';
+
+interface PostsRepositoryDeps {
+  transaction: Trx<DB>;
+}
 
 interface FindFilteredOptions {
   search?: string;
@@ -15,9 +20,7 @@ interface FindFilteredOptions {
   order?: 'asc' | 'desc';
 }
 
-export const createPostsRepository = ({
-  transaction,
-}: Pick<Dependencies, 'transaction'>) => {
+export const createPostsRepository = ({ transaction }: PostsRepositoryDeps) => {
   const base = createSoftDeleteRepository<DB, 'posts'>(transaction, 'posts');
   const bulk = createSoftDeleteBulkOperations<DB, 'posts'>(
     transaction,

@@ -47,7 +47,8 @@ Credentials: `saaskit/saaskit`, database: `saaskit_dev`.
 ### Monorepo Layout
 
 - **`packages/kit/*`** -- Shared infrastructure packages (each has its own `CLAUDE.md` with detailed conventions)
-  - `core` -- DI container (Awilix), config (Zod), Fastify server factory, graceful shutdown
+  - `core` -- DI container (Awilix), Fastify server factory, graceful shutdown
+  - `config` -- Zod-based config with `.env` / `.env.{ENVIRONMENT}` cascade
   - `db` -- Kysely ORM, Trx proxy (AsyncLocalStorage transactions), base/soft-delete repositories, migrations
   - `auth` -- Stateless JWT (jose), Argon2 passwords, Redis token blacklist
   - `authz` -- CASL authorization, role-based abilities, route guards
@@ -55,6 +56,7 @@ Credentials: `saaskit/saaskit`, database: `saaskit_dev`.
   - `errors` -- Exception hierarchy, global error handler
   - `jobs` -- BullMQ auto-discovery, queue/worker management
   - `admin` -- Django-admin-style panel (htmx + Preact SSR), auto-inferred CRUD
+  - `test` -- Shared test utilities (PGlite, ioredis-mock, DI container builder)
   - `eslint-config` -- Shared ESLint 10+ config
   - `ts-config` -- Shared TypeScript configs
   - `effect-ts` -- Optional Effect integration

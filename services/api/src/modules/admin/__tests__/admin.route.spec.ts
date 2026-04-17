@@ -363,6 +363,54 @@ describe('Admin Panel Routes', () => {
         expect(response.body).toBeDefined();
       }
     });
+
+    it('should create a post even when the autocomplete widget submits its __display field', async () => {
+      const { tokens, email } = await createAdminUser(app, dataSource);
+      const author = await dataSource
+        .selectFrom('users')
+        .select('id')
+        .where('email', '=', email)
+        .executeTakeFirstOrThrow();
+
+      const formResponse = await app.inject({
+        method: 'GET',
+        url: '/admin/posts/new',
+        headers: buildAuthHeaders(tokens.accessToken),
+      });
+      const csrfMatch = formResponse.body.match(
+        /name="_csrf"\s+value="([^"]+)"/,
+      );
+      const csrf = csrfMatch?.[1] ?? '';
+
+      const fields = new URLSearchParams();
+      fields.set('_csrf', csrf);
+      fields.set('title', 'Hello');
+      fields.set('content', 'Body');
+      fields.set('status', 'draft');
+      fields.set('authorId', author.id);
+      // FK autocomplete widget posts this extra UI-only field; the admin
+      // must strip it before validation or the create fails silently.
+      fields.set('authorId__display', author.id);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/admin/posts',
+        headers: {
+          ...buildAuthHeaders(tokens.accessToken),
+          'content-type': 'application/x-www-form-urlencoded',
+        },
+        payload: fields.toString(),
+      });
+
+      expect([204, 302]).toContain(response.statusCode);
+
+      const created = await dataSource
+        .selectFrom('posts')
+        .selectAll()
+        .where('title', '=', 'Hello')
+        .executeTakeFirstOrThrow();
+      expect(created.authorId).toBe(author.id);
+    });
   });
 
   // -- Detail / Edit form --
