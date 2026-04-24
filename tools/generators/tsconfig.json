@@ -1,0 +1,12 @@
+{
+  "extends": "@kit/ts-config/node",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": ".",
+    "tsBuildInfoFile": "dist/.tsbuildinfo",
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  },
+  "include": ["src", "__tests__"],
+  "exclude": ["dist", "node_modules"]
+}

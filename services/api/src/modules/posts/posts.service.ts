@@ -1,5 +1,4 @@
-import { NotFoundException } from '@kit/errors/exceptions';
-
+import { PostNotFound } from './errors/post-not-found.error.ts';
 import type { PostsRepository } from './posts.repository.ts';
 
 interface PostsServiceDeps {
@@ -33,7 +32,7 @@ export const createPostsService = ({ postsRepository }: PostsServiceDeps) => {
   return {
     findById: async (id: string) => {
       const post = await postsRepository.findById(id);
-      if (!post) throw new NotFoundException(`Post with id '${id}' not found`);
+      if (!post) throw new PostNotFound(id);
       return post;
     },
 
@@ -55,13 +54,13 @@ export const createPostsService = ({ postsRepository }: PostsServiceDeps) => {
         ...data,
         updatedAt: new Date().toISOString(),
       });
-      if (!post) throw new NotFoundException(`Post with id '${id}' not found`);
+      if (!post) throw new PostNotFound(id);
       return post;
     },
 
     deleteById: async (id: string) => {
       const post = await postsRepository.deleteById(id);
-      if (!post) throw new NotFoundException(`Post with id '${id}' not found`);
+      if (!post) throw new PostNotFound(id);
       return post;
     },
 

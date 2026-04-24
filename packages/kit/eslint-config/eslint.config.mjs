@@ -1,6 +1,7 @@
 import js from '@eslint/js';
+import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript';
 import prettierPlugin from 'eslint-plugin-prettier/recommended';
-import importPlugin from 'eslint-plugin-import-x';
+import importPlugin, { createNodeResolver } from 'eslint-plugin-import-x';
 import unicorn from 'eslint-plugin-unicorn';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -33,10 +34,10 @@ export const baseConfig = [
     },
     settings: {
       'import-x/internal-regex': '^@kit(/|$)',
-      'import-x/resolver': {
-        typescript: true,
-        node: true,
-      },
+      'import-x/resolver-next': [
+        createTypeScriptImportResolver(),
+        createNodeResolver(),
+      ],
     },
     rules: {
       '@typescript-eslint/consistent-type-imports': 'error',

@@ -30,21 +30,28 @@ A batteries-included monorepo for building modular Fastify backends. Reusable in
 
 ### Setup
 
+**One-shot** (uses the root `Makefile`):
+
 ```bash
-# Install dependencies
+make setup          # env + install + docker up + migrate
+make admin EMAIL=you@example.com PASSWORD=change-me-please-1234
+make dev            # API on :3000, admin panel at /admin
+```
+
+**Or step by step**:
+
+```bash
+cp .env.example .env         # defaults match docker-compose ports
 pnpm install
-
-# Start infrastructure (PostgreSQL on :5433, Redis on :6380)
-docker compose up -d
-
-# Run database migrations
+docker compose up -d         # Postgres :5433, Redis :6380
 pnpm --filter api db:migrate
-
-# Start the dev server
+pnpm --filter api create-admin --email you@example.com --password change-me-please-1234
 pnpm dev
 ```
 
 Default database credentials: `saaskit` / `saaskit`, database: `saaskit_dev`.
+Every `@kit/*` config-schema variable is documented in [`.env.example`](./.env.example).
+Run `make help` for the full list of targets.
 
 ## Monorepo Structure
 

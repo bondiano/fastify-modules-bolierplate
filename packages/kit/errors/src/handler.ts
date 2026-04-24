@@ -112,7 +112,7 @@ export const createErrorHandler = (options: CreateErrorHandlerOptions = {}) => {
       };
     } else {
       const fromFastify =
-        error && typeof error === 'object' && 'code' in error
+        error && typeof error === 'object'
           ? fromFastifyError(error as FastifyError)
           : undefined;
       const fromUser = options.mapUnknown?.(error);

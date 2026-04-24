@@ -3,6 +3,7 @@ import { Type } from '@sinclair/typebox';
 import type { Selectable } from 'kysely';
 
 import type { DB } from '#db/schema.ts';
+import { subject } from '@kit/authz';
 import {
   idParameterSchema,
   paginatedQuerySchema,
@@ -120,7 +121,7 @@ const postsRoute: FastifyPluginAsyncTypebox = async (fastify) => {
         const post = await postsService.findById(
           (request.params as { id: string }).id,
         );
-        return { ...post, __typename: 'Post' };
+        return subject('Post', post);
       }),
     ],
     handler: async (request) => {
@@ -147,7 +148,7 @@ const postsRoute: FastifyPluginAsyncTypebox = async (fastify) => {
         const post = await postsService.findById(
           (request.params as { id: string }).id,
         );
-        return { ...post, __typename: 'Post' };
+        return subject('Post', post);
       }),
     ],
     handler: async (request, reply) => {

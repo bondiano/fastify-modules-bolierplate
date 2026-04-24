@@ -1,0 +1,34 @@
+{
+  "name": "@tools/generators",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "generate": "./src/cli.ts"
+  },
+  "scripts": {
+    "start": "node --experimental-strip-types ./src/cli.ts",
+    "lint": "eslint .",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf .turbo"
+  },
+  "dependencies": {
+    "@effect/cli": "^0.75.1",
+    "@effect/platform": "^0.96.1",
+    "@effect/platform-node": "^0.106.0",
+    "@effect/printer": "^0.49.0",
+    "@effect/printer-ansi": "^0.49.0",
+    "effect": "^3.21.1",
+    "pg": "^8.20.0"
+  },
+  "devDependencies": {
+    "@kit/eslint-config": "workspace:*",
+    "@kit/ts-config": "workspace:*",
+    "@types/node": "^25.6.0",
+    "@types/pg": "^8.11.10",
+    "eslint": "^10.2.0",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.4"
+  }
+}

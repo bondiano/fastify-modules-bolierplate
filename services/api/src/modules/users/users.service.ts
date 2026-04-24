@@ -1,5 +1,4 @@
-import { NotFoundException } from '@kit/errors/exceptions';
-
+import { UserNotFound } from './errors/user-not-found.error.ts';
 import type { UsersRepository } from './users.repository.ts';
 
 interface UsersServiceDeps {
@@ -10,7 +9,7 @@ export const createUsersService = ({ usersRepository }: UsersServiceDeps) => {
   return {
     findById: async (id: string) => {
       const user = await usersRepository.findById(id);
-      if (!user) throw new NotFoundException(`User with id '${id}' not found`);
+      if (!user) throw new UserNotFound(id);
       return user;
     },
 
@@ -33,13 +32,13 @@ export const createUsersService = ({ usersRepository }: UsersServiceDeps) => {
         ...data,
         updatedAt: new Date().toISOString(),
       });
-      if (!user) throw new NotFoundException(`User with id '${id}' not found`);
+      if (!user) throw new UserNotFound(id);
       return user;
     },
 
     deleteById: async (id: string) => {
       const user = await usersRepository.deleteById(id);
-      if (!user) throw new NotFoundException(`User with id '${id}' not found`);
+      if (!user) throw new UserNotFound(id);
       return user;
     },
   };

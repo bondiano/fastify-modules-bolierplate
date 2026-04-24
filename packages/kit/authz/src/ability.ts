@@ -95,3 +95,19 @@ export const createAbilityFactory = ({
  */
 export const createEmptyAbility = (): AppAbility =>
   new AbilityBuilder<AppAbility>(createMongoAbility).build();
+
+/**
+ * Re-export CASL's `subject()` helper so consumers don't have to depend on
+ * `@casl/ability` directly. Tag an instance object with a subject name so
+ * the default detector can match it against rules defined on that tag:
+ *
+ * ```ts
+ * preHandler: [
+ *   fastify.authorize('update', 'Post', async (request) => {
+ *     const post = await postsService.findById(request.params.id);
+ *     return subject('Post', post);
+ *   }),
+ * ],
+ * ```
+ */
+export { subject } from '@casl/ability';
