@@ -10,7 +10,11 @@ import { NotFoundException } from '@kit/errors';
 import { getRepo } from '../runtime/context.js';
 import { Form } from '../views/index.js';
 
-import { assertAdminContext, respondHtml } from './_helpers.js';
+import {
+  assertAdminContext,
+  assertTenantForResource,
+  respondHtml,
+} from './_helpers.js';
 
 export const detailRoute: FastifyPluginAsync = async (fastify) => {
   fastify.get(
@@ -20,6 +24,7 @@ export const detailRoute: FastifyPluginAsync = async (fastify) => {
 
       const params = request.params as { resource?: string; id?: string };
       const spec = ctx.registry.getOrThrow(params.resource ?? '');
+      assertTenantForResource(spec, request);
       const id = params.id ?? '';
       if (id.length === 0) throw new NotFoundException('Missing record id');
 
@@ -46,6 +51,7 @@ export const detailRoute: FastifyPluginAsync = async (fastify) => {
         csrfToken,
         action: `${ctx.options.prefix}/${spec.name}/${id}`,
         method: 'PATCH',
+        id,
       });
 
       return respondHtml(reply, request, ctx, form, {

@@ -148,6 +148,24 @@ export const mergeOverrides = (
       ? { subject: override.permissions.subject }
       : inferred.permissions;
 
+  const tenantScoped = override.tenantScoped ?? inferred.tenantScoped;
+  // `scope` defaults track `tenantScoped` when the override flips the
+  // flag without explicitly choosing a scope, so a forced `tenantScoped:
+  // false` doesn't leave a stale `'tenant'` scope behind.
+  const scope =
+    override.scope ??
+    (override.tenantScoped === undefined
+      ? inferred.scope
+      : tenantScoped
+        ? 'tenant'
+        : 'system');
+
+  // Group is opt-in; an override of `null` is honoured (lets a service
+  // explicitly un-group a previously-grouped resource).
+  const group = override.group === undefined ? inferred.group : override.group;
+
+  const detailActions = override.detailActions ?? inferred.detailActions;
+
   return {
     ...inferred,
     label: override.label ?? inferred.label,
@@ -158,5 +176,9 @@ export const mergeOverrides = (
     relations,
     rowActions,
     permissions,
+    tenantScoped,
+    scope,
+    group,
+    detailActions,
   };
 };

@@ -16,7 +16,7 @@ import { renderFragment } from '../render.js';
 import { getRepo } from '../runtime/context.js';
 import type { AdminDiscoverable, AdminResourceSpec } from '../types.js';
 
-import { assertAdminContext } from './_helpers.js';
+import { assertAdminContext, assertTenantForResource } from './_helpers.js';
 
 const LOOKUP_LIMIT = 50;
 const MAX_RESULTS = 20;
@@ -84,6 +84,7 @@ export const relationsRoute: FastifyPluginAsync = async (fastify) => {
 
       const params = request.params as { resource?: string; col?: string };
       const spec = ctx.registry.getOrThrow(params.resource ?? '');
+      assertTenantForResource(spec, request);
       const colName = params.col ?? '';
 
       const field = spec.fields.find((f) => f.name === colName);

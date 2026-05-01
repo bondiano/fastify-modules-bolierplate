@@ -14,6 +14,7 @@ import { Form } from '../views/index.js';
 
 import {
   assertAdminContext,
+  assertTenantForResource,
   buildRenderValues,
   collectErrors,
   extractCsrf,
@@ -32,6 +33,7 @@ export const updateRoute: FastifyPluginAsync = async (fastify) => {
 
       const params = request.params as { resource?: string; id?: string };
       const spec = ctx.registry.getOrThrow(params.resource ?? '');
+      assertTenantForResource(spec, request);
       const id = params.id ?? '';
       if (id.length === 0) throw new NotFoundException('Missing record id');
 
@@ -61,6 +63,7 @@ export const updateRoute: FastifyPluginAsync = async (fastify) => {
           csrfToken,
           action: `${ctx.options.prefix}/${spec.name}/${id}`,
           method: 'PATCH',
+          id,
         });
         reply.status(422);
         return respondHtml(reply, request, ctx, form, {
@@ -87,6 +90,7 @@ export const updateRoute: FastifyPluginAsync = async (fastify) => {
           csrfToken,
           action: `${ctx.options.prefix}/${spec.name}/${id}`,
           method: 'PATCH',
+          id,
         });
         reply.status(422);
         return respondHtml(reply, request, ctx, form, {

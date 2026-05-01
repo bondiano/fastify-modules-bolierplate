@@ -58,6 +58,10 @@ export const makeResourceSpec = (
     rowActions: [],
     permissions: { subject: null },
     hasSoftDelete: false,
+    tenantScoped: false,
+    scope: 'system',
+    group: null,
+    detailActions: [],
     validators: {
       create: Type.Object({}),
       update: Type.Object({}),

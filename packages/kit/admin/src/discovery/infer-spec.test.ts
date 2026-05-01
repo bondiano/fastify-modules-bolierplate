@@ -66,6 +66,7 @@ const makeTable = (overrides: Partial<TableMeta> = {}): TableMeta => ({
   ],
   primaryKey: ['id'],
   hasSoftDelete: false,
+  hasTenantColumn: false,
   ...overrides,
 });
 
@@ -208,6 +209,26 @@ describe('inferSpec', () => {
       resource: 'users',
       display: 'id',
     });
+  });
+
+  it('marks tenantScoped + scope=tenant when the table has a tenant column', () => {
+    const spec = inferSpec({
+      discovered: makeDiscovered('posts', 'postsRepository'),
+      tableMeta: makeTable({ hasTenantColumn: true }),
+      validators: makeValidators(),
+    });
+    expect(spec.tenantScoped).toBe(true);
+    expect(spec.scope).toBe('tenant');
+  });
+
+  it('falls back to system scope when no tenant column is present', () => {
+    const spec = inferSpec({
+      discovered: makeDiscovered('tenants', 'tenantsRepository'),
+      tableMeta: makeTable({ name: 'tenants', hasTenantColumn: false }),
+      validators: makeValidators(),
+    });
+    expect(spec.tenantScoped).toBe(false);
+    expect(spec.scope).toBe('system');
   });
 
   it('builds search from non-FK text/varchar columns only', () => {

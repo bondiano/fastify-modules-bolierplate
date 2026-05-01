@@ -471,6 +471,9 @@ importers:
       '@kit/core':
         specifier: workspace:*
         version: link:../core
+      '@kit/db':
+        specifier: workspace:*
+        version: link:../db
       '@kit/errors':
         specifier: workspace:*
         version: link:../errors
@@ -480,10 +483,16 @@ importers:
       fastify-plugin:
         specifier: ^5.1.0
         version: 5.1.0
+      kysely:
+        specifier: ^0.28.16
+        version: 0.28.16
     devDependencies:
       '@kit/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
+      '@kit/test':
+        specifier: workspace:*
+        version: link:../test
       '@kit/ts-config':
         specifier: workspace:*
         version: link:../ts-config
@@ -553,6 +562,9 @@ importers:
       '@fastify/awilix':
         specifier: ^8.2.0
         version: 8.2.0(awilix@13.0.3)(fastify@5.8.4)
+      '@fastify/cookie':
+        specifier: ^11.0.2
+        version: 11.0.2
       '@fastify/redis':
         specifier: ^7.2.0
         version: 7.2.0
@@ -586,6 +598,9 @@ importers:
       '@kit/schemas':
         specifier: workspace:*
         version: link:../../packages/kit/schemas
+      '@kit/tenancy':
+        specifier: workspace:*
+        version: link:../../packages/kit/tenancy
       '@sinclair/typebox':
         specifier: ^0.34.49
         version: 0.34.49

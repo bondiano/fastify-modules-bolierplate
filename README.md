@@ -66,6 +66,7 @@ packages/kit/
   config/        Zod-based config with .env cascade
   jobs/          BullMQ auto-discovery, queue/worker management
   admin/         Admin panel (htmx + Preact SSR), auto-inferred CRUD
+  tenancy/       Opt-in multi-tenancy (resolver chain, tenant-scoped repositories, canonical tenants/memberships/invitations migrations)
   eslint-config/ Shared ESLint config
   ts-config/     Shared TypeScript configs
   effect-ts/     Optional Effect integration
@@ -115,6 +116,31 @@ main.ts -> createConfig() -> createLogger() -> createDataSource()
   -> createTransactionStorage() -> createContainer() -> createServer()
   -> setupGracefulShutdown() -> server.listen()
 ```
+
+### Multi-tenancy (`@kit/tenancy`)
+
+The `@kit/tenancy` package is opt-in: register `createTenancyPlugin` in
+`createServer` and every protected route resolves a tenant via a resolver
+chain (header / cookie / JWT claim / user-default), opens an
+`AsyncLocalStorage` frame for that tenant, and lets `tenantScoped()`
+repositories transparently inject `WHERE tenant_id = :current` on reads,
+auto-stamp it on writes, and refuse cross-tenant updates.
+
+The kit ships canonical migrations for the `tenants`, `memberships`, and
+`invitations` tables plus a backfill template (`migrations/_template`) for
+retrofitting existing tables with `tenant_id`. `services/api` uses both --
+the canonical migrations are copied into `services/api/migrations/`
+(timestamps sort after the existing module migrations) and `users`/`posts`
+are retrofitted via `add_tenant_id_to_*` migrations that seed a
+`Default Workspace` tenant for backfill and add a `(tenant_id, created_at)`
+composite index. The `/auth/register` flow creates a personal tenant + an
+`owner` membership for every new account, so signup mirrors the SaaS
+"private workspace per user" pattern.
+
+See [`packages/kit/tenancy/CLAUDE.md`](./packages/kit/tenancy/CLAUDE.md)
+for the full resolver-chain reference, the
+`createTenantScopedRepository` API, the invitation event hook, and the
+"how to make a module tenant-scoped" recipe.
 
 ## Commands
 

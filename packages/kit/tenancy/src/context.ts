@@ -1,4 +1,4 @@
-import type { AsyncLocalStorage } from 'node:async_hooks';
+import { AsyncLocalStorage } from 'node:async_hooks';
 
 import { CrossTenantAccess, TenantNotResolved } from './errors.js';
 
@@ -64,12 +64,12 @@ export const createTenantContext = ({
 };
 
 /**
- * The only place where `node:async_hooks` is imported. Multiple
- * `AsyncLocalStorage` instances silently break propagation under vitest's
- * module isolation -- mirrors the guarantee in `@kit/db`'s
- * `createTransactionStorage`.
+ * The only place where `AsyncLocalStorage` is constructed for tenancy.
+ * Multiple instances silently break propagation under vitest's module
+ * isolation -- mirrors the guarantee in `@kit/db`'s
+ * `createTransactionStorage`. Synchronous because `AsyncLocalStorage` is
+ * a synchronous primitive; the previous `await import(...)` form was a
+ * leftover from gating on a dynamic import that turned out unnecessary.
  */
-export const createTenantStorage = async (): Promise<TenantStorage> => {
-  const { AsyncLocalStorage } = await import('node:async_hooks');
-  return new AsyncLocalStorage<TenantContextValue>();
-};
+export const createTenantStorage = (): TenantStorage =>
+  new AsyncLocalStorage<TenantContextValue>();

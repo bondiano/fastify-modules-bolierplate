@@ -209,7 +209,16 @@ export const buildTableMetas = (
     const hasSoftDelete = columns.some(
       (c) => c.rawName === 'deleted_at' && c.nullable,
     );
-    tables.push({ name: tableName, columns, primaryKey, hasSoftDelete });
+    const hasTenantColumn = columns.some(
+      (c) => c.rawName === 'tenant_id' || c.name === 'tenantId',
+    );
+    tables.push({
+      name: tableName,
+      columns,
+      primaryKey,
+      hasSoftDelete,
+      hasTenantColumn,
+    });
   }
   return tables;
 };

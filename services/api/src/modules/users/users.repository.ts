@@ -1,48 +1,60 @@
 import type { DB } from '#db/schema.ts';
-import type { AuthUser, CreateUserInput, UserStore } from '@kit/auth';
-import { createBaseRepository } from '@kit/db/repository';
+import type { AuthUser } from '@kit/auth';
 import type { Trx } from '@kit/db/transaction';
+import { createTenantScopedRepository, type TenantContext } from '@kit/tenancy';
 
 interface UsersRepositoryDeps {
   transaction: Trx<DB>;
+  tenantContext: TenantContext;
 }
 
-export const createUsersRepository = ({ transaction }: UsersRepositoryDeps) => {
-  const base = createBaseRepository<DB, 'users'>(transaction, 'users');
+export const createUsersRepository = ({
+  transaction,
+  tenantContext,
+}: UsersRepositoryDeps) => {
+  const scoped = createTenantScopedRepository<DB, 'users'>({
+    transaction,
+    tenantContext,
+    tableName: 'users',
+  });
+
+  /**
+   * Auth flows (register, login, JWT verification) run before any tenant
+   * frame is active, so they must look up users globally. The userStore
+   * wrapper layered on top of the repository (`@kit/auth` adapter) uses
+   * these unscoped lookups; tenant-scoped reads go through `scoped`.
+   */
+  const findByEmail = async (email: string): Promise<AuthUser | null> =>
+    (await transaction
+      .selectFrom('users')
+      .selectAll()
+      .where('email', '=', email)
+      .executeTakeFirst()) ?? null;
+
+  const findByIdGlobally = async (id: string): Promise<AuthUser | null> =>
+    (await transaction
+      .selectFrom('users')
+      .selectAll()
+      .where('id', '=', id)
+      .executeTakeFirst()) ?? null;
+
+  /** Resolver-chain hook: returns the user's home tenant id if any. */
+  const findDefaultTenantId = async (
+    userId: string,
+  ): Promise<string | null> => {
+    const row = await transaction
+      .selectFrom('users')
+      .select('tenantId')
+      .where('id', '=', userId)
+      .executeTakeFirst();
+    return row?.tenantId ?? null;
+  };
 
   return {
-    ...base,
-
-    findByEmail: async (email: string): Promise<AuthUser | null> =>
-      (await transaction
-        .selectFrom('users')
-        .selectAll()
-        .where('email', '=', email)
-        .executeTakeFirst()) ?? null,
-
-    /** Satisfies @kit/auth UserStore interface. */
-    asUserStore: (): UserStore => ({
-      findByEmail: async (email: string): Promise<AuthUser | null> => {
-        const user = await transaction
-          .selectFrom('users')
-          .selectAll()
-          .where('email', '=', email)
-          .executeTakeFirst();
-        return user ?? null;
-      },
-
-      findById: async (id: string): Promise<AuthUser | null> => {
-        const user = await base.findById(id);
-        return user ?? null;
-      },
-
-      create: async (input: CreateUserInput): Promise<AuthUser> =>
-        await base.create({
-          email: input.email,
-          passwordHash: input.passwordHash,
-          role: input.role ?? 'user',
-        }),
-    }),
+    ...scoped,
+    findByEmail,
+    findByIdGlobally,
+    findDefaultTenantId,
   };
 };
 

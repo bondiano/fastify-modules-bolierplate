@@ -30,6 +30,7 @@
   "dependencies": {
     "@fastify/autoload": "^6.3.1",
     "@fastify/awilix": "^8.2.0",
+    "@fastify/cookie": "^11.0.2",
     "@fastify/redis": "^7.2.0",
     "@fastify/type-provider-typebox": "^6.1.0",
     "@kit/admin": "workspace:*",
@@ -41,6 +42,7 @@
     "@kit/errors": "workspace:*",
     "@kit/jobs": "workspace:*",
     "@kit/schemas": "workspace:*",
+    "@kit/tenancy": "workspace:*",
     "@sinclair/typebox": "^0.34.49",
     "awilix": "^13.0.3",
     "citty": "^0.2.2",

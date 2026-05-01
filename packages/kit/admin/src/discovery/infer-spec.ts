@@ -174,6 +174,10 @@ export const inferSpec = (opts: InferSpecOptions): AdminResourceSpec => {
     rowActions: [],
     permissions: { subject: toSubject(tableMeta.name) },
     hasSoftDelete: tableMeta.hasSoftDelete,
+    tenantScoped: tableMeta.hasTenantColumn,
+    scope: tableMeta.hasTenantColumn ? 'tenant' : 'system',
+    group: null,
+    detailActions: [],
     validators: { create: validators.create, update: validators.update },
   };
 };

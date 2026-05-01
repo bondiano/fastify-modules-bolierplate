@@ -16,6 +16,7 @@ import type { AdminDiscoverable } from '../types.js';
 
 import {
   assertAdminContext,
+  assertTenantForResource,
   headerCsrf,
   verifyCsrfOrThrow,
 } from './_helpers.js';
@@ -43,6 +44,7 @@ export const deleteRoute: FastifyPluginAsync = async (fastify) => {
 
       const params = request.params as { resource?: string; id?: string };
       const spec = ctx.registry.getOrThrow(params.resource ?? '');
+      assertTenantForResource(spec, request);
       const id = params.id ?? '';
       if (id.length === 0) throw new NotFoundException('Missing record id');
 
@@ -73,6 +75,7 @@ export const deleteRoute: FastifyPluginAsync = async (fastify) => {
 
       const params = request.params as { resource?: string };
       const spec = ctx.registry.getOrThrow(params.resource ?? '');
+      assertTenantForResource(spec, request);
 
       if (
         spec.permissions.subject !== null &&

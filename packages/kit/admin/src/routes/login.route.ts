@@ -32,6 +32,10 @@ const REFRESH_COOKIE = '__Host-admin_refresh';
 const ACCESS_MAX_AGE = 900; // 15 min
 const REFRESH_MAX_AGE = 1_209_600; // 14 days
 
+// Public auth routes never have a tenant frame; mark them so a consumer's
+// `@kit/tenancy` plugin skips resolution instead of throwing 400 here.
+const BYPASS_CONFIG = { tenant: 'bypass' as const };
+
 interface LoginBody {
   readonly email?: unknown;
   readonly password?: unknown;
@@ -177,6 +181,7 @@ export const loginRoute: FastifyPluginAsync = async (fastify) => {
 
   fastify.get(
     '/login',
+    { config: BYPASS_CONFIG },
     async (_request: FastifyRequest, reply: FastifyReply) => {
       const ctx = assertAdminContext(fastify);
       reply.type('text/html; charset=utf-8');
@@ -191,6 +196,7 @@ export const loginRoute: FastifyPluginAsync = async (fastify) => {
 
   fastify.post(
     '/login',
+    { config: BYPASS_CONFIG },
     async (request: FastifyRequest, reply: FastifyReply) => {
       const ctx = assertAdminContext(fastify);
 
@@ -243,6 +249,7 @@ export const loginRoute: FastifyPluginAsync = async (fastify) => {
 
   fastify.post(
     '/logout',
+    { config: BYPASS_CONFIG },
     async (request: FastifyRequest, reply: FastifyReply) => {
       const ctx = assertAdminContext(fastify);
 

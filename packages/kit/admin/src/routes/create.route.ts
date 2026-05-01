@@ -16,6 +16,7 @@ import { Form } from '../views/index.js';
 
 import {
   assertAdminContext,
+  assertTenantForResource,
   buildRenderValues,
   collectErrors,
   extractCsrf,
@@ -34,6 +35,7 @@ export const createRoute: FastifyPluginAsync = async (fastify) => {
 
       const params = request.params as { resource?: string };
       const spec = ctx.registry.getOrThrow(params.resource ?? '');
+      assertTenantForResource(spec, request);
 
       if (
         spec.permissions.subject !== null &&
@@ -68,6 +70,7 @@ export const createRoute: FastifyPluginAsync = async (fastify) => {
 
       const params = request.params as { resource?: string };
       const spec = ctx.registry.getOrThrow(params.resource ?? '');
+      assertTenantForResource(spec, request);
 
       if (
         spec.permissions.subject !== null &&

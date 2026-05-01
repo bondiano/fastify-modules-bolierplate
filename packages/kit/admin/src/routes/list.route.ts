@@ -14,7 +14,11 @@ import { getRepo } from '../runtime/context.js';
 import type { AdminDiscoverable, PaginatedPage } from '../types.js';
 import { DataTable } from '../views/index.js';
 
-import { assertAdminContext, respondHtml } from './_helpers.js';
+import {
+  assertAdminContext,
+  assertTenantForResource,
+  respondHtml,
+} from './_helpers.js';
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 20;
@@ -69,6 +73,7 @@ export const listRoute: FastifyPluginAsync = async (fastify) => {
 
       const params = request.params as { resource?: string };
       const spec = ctx.registry.getOrThrow(params.resource ?? '');
+      assertTenantForResource(spec, request);
 
       if (
         spec.permissions.subject !== null &&

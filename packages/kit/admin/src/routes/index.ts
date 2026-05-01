@@ -11,3 +11,4 @@ export { createRoute } from './create.route.js';
 export { updateRoute } from './update.route.js';
 export { deleteRoute } from './delete.route.js';
 export { relationsRoute } from './relations.route.js';
+export { tenantsSwitcherRoute } from './tenants-switcher.route.js';

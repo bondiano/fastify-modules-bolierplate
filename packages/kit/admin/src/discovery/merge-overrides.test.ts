@@ -54,6 +54,10 @@ const makeSpec = (): AdminResourceSpec => ({
   rowActions: [],
   permissions: { subject: 'Post' },
   hasSoftDelete: true,
+  tenantScoped: false,
+  scope: 'system',
+  group: null,
+  detailActions: [],
   validators: { create: Type.Object({}), update: Type.Object({}) },
 });
 
@@ -152,6 +156,63 @@ describe('mergeOverrides', () => {
       emptyRelations,
     );
     expect(merged.permissions.subject).toBe('Article');
+  });
+
+  it('passes tenantScoped + scope through unchanged when override is empty', () => {
+    const spec = makeSpec();
+    const merged = mergeOverrides(
+      { ...spec, tenantScoped: true, scope: 'tenant' },
+      {},
+      emptyRelations,
+    );
+    expect(merged.tenantScoped).toBe(true);
+    expect(merged.scope).toBe('tenant');
+  });
+
+  it('lets the override force tenantScoped: false and clears scope to system', () => {
+    const spec = {
+      ...makeSpec(),
+      tenantScoped: true,
+      scope: 'tenant' as const,
+    };
+    const merged = mergeOverrides(
+      spec,
+      { tenantScoped: false },
+      emptyRelations,
+    );
+    expect(merged.tenantScoped).toBe(false);
+    expect(merged.scope).toBe('system');
+  });
+
+  it('lets the override pin scope independently of tenantScoped', () => {
+    const spec = {
+      ...makeSpec(),
+      tenantScoped: true,
+      scope: 'tenant' as const,
+    };
+    const merged = mergeOverrides(spec, { scope: 'system' }, emptyRelations);
+    // tenantScoped flag is unchanged but the resource is rendered at the
+    // system level (e.g. a cross-tenant analytics view).
+    expect(merged.tenantScoped).toBe(true);
+    expect(merged.scope).toBe('system');
+  });
+
+  it("defaults to the inferred `group` (null) when override doesn't touch it", () => {
+    const spec = makeSpec();
+    const merged = mergeOverrides(spec, {}, emptyRelations);
+    expect(merged.group).toBeNull();
+  });
+
+  it('lets an override set `group` to a label', () => {
+    const spec = makeSpec();
+    const merged = mergeOverrides(spec, { group: 'Tenancy' }, emptyRelations);
+    expect(merged.group).toBe('Tenancy');
+  });
+
+  it('lets an override force `group: null` to un-group an inferred-grouped spec', () => {
+    const spec = { ...makeSpec(), group: 'Tenancy' as string | null };
+    const merged = mergeOverrides(spec, { group: null }, emptyRelations);
+    expect(merged.group).toBeNull();
   });
 
   it('does not mutate the input spec', () => {

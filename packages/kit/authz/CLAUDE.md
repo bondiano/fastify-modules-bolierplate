@@ -31,6 +31,13 @@ src/
   matching the kit's global handler shape.
 - **Lazy ability build.** `request.ability` is only constructed the first
   time `authorize` runs on a request, so unauthenticated routes pay nothing.
+- **Optional tenant-level membership.** Definers receive a third argument
+  `membership?: AuthzMembership` (`{ tenantId, role }`). Single-tenant apps
+  leave it `undefined`. Multi-tenant apps populate `request.membership`
+  before `authorize` runs (typically via a preHandler that pairs
+  `request.tenant` with the user's row from `membershipsRepository`); the
+  plugin reads it via `getMembership` (overridable). The type lives in
+  `@kit/authz` so authz never imports `@kit/tenancy`.
 
 ## Wiring sketch (in services/api)
 
@@ -94,6 +101,47 @@ export const definePostAbilities: DefineAbilities = (user, builder) => {
 
 Definers are **additive only** -- they grant, never revoke. To deny
 something, simply don't grant it.
+
+### Tenant-level role rules
+
+When the consuming app populates `request.membership`, the same definer
+can branch on the user's role *within the active tenant*:
+
+```ts
+import type { DefineAbilities } from '@kit/authz';
+
+export const defineInvitationAbilities: DefineAbilities = (
+  _user,
+  builder,
+  membership,
+) => {
+  // Single-tenant calls (no membership) silently no-op -- definers must
+  // tolerate `undefined` rather than throwing.
+  if (!membership) return;
+  if (membership.role === 'owner' || membership.role === 'admin') {
+    builder.can('create', 'Invitation');
+  }
+};
+```
+
+Wiring `request.membership` lives in the consuming app (kept out of
+`@kit/authz` to avoid pulling in `@kit/tenancy`):
+
+```ts
+// services/api/src/server/plugins/membership.ts
+fastify.addHook('preHandler', async (request) => {
+  if (!request.tenant || !request.auth) return;
+  const row = await membershipsRepository.findByUserIdInCurrentTenant(
+    request.auth.sub,
+  );
+  if (row) {
+    request.membership = { tenantId: row.tenantId, role: row.role };
+  }
+});
+```
+
+Register this hook *before* `createAuthzPlugin` (or any route that calls
+`fastify.authorize`).
 
 ## Guarding routes
 

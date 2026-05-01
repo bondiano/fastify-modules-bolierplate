@@ -12,6 +12,10 @@
  *   default value; everything else is optional.
  * - The `update` schema drops primary-key columns entirely and marks
  *   every remaining field as optional so partial updates work.
+ * - Tenant-scoped tables exclude `tenant_id` (camelCased `tenantId`)
+ *   from both schemas since the tenant-scoped repository auto-stamps it
+ *   from the active frame -- the admin form must not require the user
+ *   to supply it.
  */
 import { Type } from '@sinclair/typebox';
 import type { TObject, TSchema } from '@sinclair/typebox';
@@ -64,12 +68,18 @@ const isRequiredForCreate = (col: ColumnMeta): boolean =>
 const buildObject = (fields: Record<string, TSchema>): TObject =>
   Type.Object(fields, { additionalProperties: false });
 
+const isTenantColumn = (col: ColumnMeta, tenantScoped: boolean): boolean => {
+  if (!tenantScoped) return false;
+  return col.name === 'tenantId' || col.rawName === 'tenant_id';
+};
+
 export const autogenValidators = (table: TableMeta): AutogenValidators => {
   const createFields: Record<string, TSchema> = {};
   const updateFields: Record<string, TSchema> = {};
 
   for (const col of table.columns) {
     if (col.generated) continue;
+    if (isTenantColumn(col, table.hasTenantColumn)) continue;
 
     const schema = columnToTypeBox(col);
     const key = col.name;

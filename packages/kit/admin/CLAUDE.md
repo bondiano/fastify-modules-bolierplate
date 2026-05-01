@@ -118,6 +118,93 @@ export default defineAdminResource('posts', async ({ cradle }) => ({
 
 Everything you don't set falls back to the inferred default.
 
+## Tenant-scope inference (`@kit/tenancy` integration)
+
+The admin auto-detects tenant scoping from `information_schema`:
+
+- A table with a `tenant_id` (or camelCase `tenantId`) column infers
+  `tenantScoped: true` + `scope: 'tenant'`. The underlying repository must
+  be wrapped in `createTenantScopedRepository` from `@kit/tenancy` (the
+  admin does not inject the SQL filter itself; it relies on the repo).
+- Tables without a tenant column infer `tenantScoped: false` +
+  `scope: 'system'`.
+
+Overrides can flip both flags explicitly when inference picks the wrong
+answer (e.g. a system-owned analytics table that carries a denormalised
+`tenant_id` column for queries):
+
+```ts
+defineAdminResource('user_activity_summary', async () => ({
+  // Has tenant_id but reads cross-tenant; render at the system level.
+  tenantScoped: false,
+  scope: 'system',
+}));
+```
+
+### Runtime guard
+
+Every CRUD route calls `assertTenantForResource(spec, request)` before
+hitting the repo. If `spec.tenantScoped === true` and `request.tenant`
+is unset, the handler throws `BadRequestException` with code
+`TENANT_REQUIRED_FOR_ADMIN`. The cookie-backed tenant switcher
+(`P2.tenancy.11`) is what catches this and redirects the user to the
+picker; until then the consumer service is responsible for ensuring
+a tenant frame exists before the user navigates to a tenant-scoped
+resource.
+
+### Public-route bypass
+
+`/admin/login`, `/admin/logout`, and `/admin/_assets/*` set
+`config.tenant: 'bypass'` so the consumer's `@kit/tenancy` plugin skips
+resolution on them. Without the marker, an unauthenticated visitor
+hitting the login page would get a 400 from the tenancy resolver. The
+admin re-declares the `FastifyContextConfig.tenant` augmentation locally
+so it does not need a hard import dependency on `@kit/tenancy`.
+
+## Side-nav grouping
+
+Resources are flat in the side nav by default. Pass `group: 'Some Label'`
+to `defineAdminResource(...)` to bucket related resources under a common
+heading. Items without a `group` are rendered above any groups; groups
+themselves are alphabetised by label so the rendering is stable across
+auto-discovery order. Pass `group: null` to un-group an inherited spec.
+
+```ts
+// services/<svc>/src/modules/tenancy/tenants.admin.ts
+defineAdminResource('tenants', async () => ({
+  group: 'Tenancy',
+  // ...
+}));
+```
+
+## Detail-page actions
+
+`AdminResourceSpec.detailActions` adds custom buttons next to "Save" /
+"Cancel" on the edit form. Each entry is render-only -- the kit ships no
+handler. The consumer registers a Fastify route that lives somewhere
+matching the action's `href(id)` and does its own auth (typically
+`verifyAdmin`). The boilerplate uses this to wire the
+`Resend invitation` action on `/admin/invitations/:id`:
+
+```ts
+defineAdminResource('invitations', async () => ({
+  detailActions: [
+    {
+      label: 'Resend invitation',
+      method: 'POST',
+      href: (id) => `/admin/invitations/${id}/regenerate`,
+      confirm: 'Generate a new accept link? The old one will stop working.',
+    },
+  ],
+}));
+```
+
+`GET` actions render as anchor tags (htmx-enhanced); `POST` actions
+render inside their own inline form so they don't accidentally submit
+the surrounding edit form. The `confirm` string gates the click via a
+JS `confirm()` prompt -- it's display-only, the server-side handler
+must still validate. `kind: 'danger'` styles the button as destructive.
+
 ## Widget inference table
 
 See `discovery/infer-widget.ts` -- maps `(PgType, maxLength, enumValues,

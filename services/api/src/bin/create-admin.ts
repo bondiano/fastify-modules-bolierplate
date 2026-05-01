@@ -13,6 +13,7 @@ import { createLogger } from '@kit/core/logger';
 import { dbConfigSchema } from '@kit/db/config';
 import { createDataSource, dbProvider } from '@kit/db/runtime';
 import { createTransactionStorage } from '@kit/db/transaction';
+import { createTenantContext, createTenantStorage } from '@kit/tenancy';
 
 const config = createConfig(
   { ...dbConfigSchema, ...authConfigSchema },
@@ -50,18 +51,21 @@ const dataSource = createDataSource<DB>({
 });
 
 const transactionStorage = await createTransactionStorage();
+const tenantStorage = createTenantStorage();
+const tenantContext = createTenantContext({ tenantStorage });
 
 const container = await createContainer({
   logger,
   config,
-  extraValues: { dataSource, transactionStorage },
+  extraValues: { dataSource, transactionStorage, tenantStorage, tenantContext },
   modulesGlobs: [
     `${import.meta.dirname}/../modules/**/*.{repository,service,mapper,client}.{js,ts}`,
   ],
   providers: [dbProvider()],
 });
 
-const { usersRepository } = container.cradle as Dependencies;
+const { usersRepository, tenantsService, transaction } =
+  container.cradle as Dependencies;
 const passwordHasher = createPasswordHasher();
 
 const existing = await usersRepository.findByEmail(email);
@@ -72,15 +76,37 @@ if (existing) {
 }
 
 const passwordHash = await passwordHasher.hash(password);
-const admin = await usersRepository.create({
-  email,
-  passwordHash,
-  role: 'admin',
+
+// Mirror the registration flow: every new account gets a personal
+// tenant + an `owner` membership in the same transaction.
+const admin = await transaction(async () => {
+  const tenant = await tenantsService.create({ name: email });
+  const user = await transaction
+    .insertInto('users')
+    .values({
+      email,
+      passwordHash,
+      role: 'admin',
+      tenantId: tenant.id,
+    })
+    .returningAll()
+    .executeTakeFirstOrThrow();
+  await transaction
+    .insertInto('memberships')
+    .values({
+      tenantId: tenant.id,
+      userId: user.id,
+      role: 'owner',
+      joinedAt: new Date().toISOString(),
+    })
+    .execute();
+  return { user, tenant };
 });
 
 console.log(`Admin user created successfully:`);
-console.log(`  ID:    ${admin.id}`);
-console.log(`  Email: ${admin.email}`);
-console.log(`  Role:  ${admin.role}`);
+console.log(`  ID:       ${admin.user.id}`);
+console.log(`  Email:    ${admin.user.email}`);
+console.log(`  Role:     ${admin.user.role}`);
+console.log(`  Tenant:   ${admin.tenant.name} (${admin.tenant.slug})`);
 
 await dataSource.destroy();

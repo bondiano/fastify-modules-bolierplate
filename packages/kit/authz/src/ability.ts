@@ -34,6 +34,22 @@ export interface AuthzUser {
   role: string;
 }
 
+/**
+ * Tenant-level membership information passed to definers when present.
+ * Single-tenant deployments leave this `undefined`; multi-tenant ones
+ * populate `request.membership` (see `@kit/authz/plugin`) so module
+ * definers can branch on the user's role *within the active tenant*.
+ *
+ * Decoupled from `@kit/tenancy` on purpose -- the type lives here so
+ * authz never imports tenancy.
+ */
+export interface AuthzMembership {
+  /** Active tenant id (matches `request.tenant.tenantId`). */
+  tenantId: string;
+  /** Role of the user within the active tenant (e.g. `owner` / `admin` / `member`). */
+  role: string;
+}
+
 export type AuthzAbilityBuilder = AbilityBuilder<AppAbility>;
 
 /**
@@ -43,10 +59,15 @@ export type AuthzAbilityBuilder = AbilityBuilder<AppAbility>;
  * Definers should be additive: they grant permissions, they should not try
  * to revoke them. The admin override is applied centrally in
  * `createAbilityFactory`.
+ *
+ * `membership` is `undefined` for single-tenant routes (no tenant frame) and
+ * for unauthenticated definitions; tenant-level role checks should branch on
+ * `membership?.role` and silently no-op when it's missing rather than throw.
  */
 export type DefineAbilities = (
   user: AuthzUser,
   builder: AuthzAbilityBuilder,
+  membership?: AuthzMembership,
 ) => void;
 
 export interface CreateAbilityFactoryOptions {
@@ -61,7 +82,7 @@ export interface CreateAbilityFactoryOptions {
 }
 
 export interface AbilityFactory {
-  buildFor(user: AuthzUser): AppAbility;
+  buildFor(user: AuthzUser, membership?: AuthzMembership): AppAbility;
 }
 
 /**
@@ -76,13 +97,13 @@ export const createAbilityFactory = ({
   definers,
   adminRole = 'admin',
 }: CreateAbilityFactoryOptions): AbilityFactory => ({
-  buildFor(user) {
+  buildFor(user, membership) {
     const builder = new AbilityBuilder<AppAbility>(createMongoAbility);
 
     if (adminRole !== null && user.role === adminRole) {
       builder.can('manage', 'all');
     } else {
-      for (const define of definers) define(user, builder);
+      for (const define of definers) define(user, builder, membership);
     }
 
     return builder.build();

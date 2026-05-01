@@ -37,6 +37,7 @@ import {
   listRoute,
   loginRoute,
   relationsRoute,
+  tenantsSwitcherRoute,
   updateRoute,
 } from './routes/index.js';
 import { loadOverrides } from './runtime/auto-loader.js';
@@ -119,6 +120,101 @@ const attachBearerFromCookie = async (
   ).cookies;
   const token = cookies?.[ACCESS_COOKIE];
   if (token) request.headers.authorization = `Bearer ${token}`;
+};
+
+interface MembershipsRepoShape {
+  findAllForUser(
+    userId: string,
+  ): Promise<readonly { tenantId: string; role: string }[]>;
+}
+
+interface TenantsRepoRow {
+  readonly id: string;
+  readonly name: string;
+  readonly slug: string;
+}
+
+interface TenantsRepoShape {
+  findById(id: string): Promise<TenantsRepoRow | undefined>;
+}
+
+const isMembershipsRepoShape = (v: unknown): v is MembershipsRepoShape =>
+  typeof v === 'object' &&
+  v !== null &&
+  typeof (v as { findAllForUser?: unknown }).findAllForUser === 'function';
+
+const isTenantsRepoShape = (v: unknown): v is TenantsRepoShape =>
+  typeof v === 'object' &&
+  v !== null &&
+  typeof (v as { findById?: unknown }).findById === 'function';
+
+/**
+ * Awilix's cradle proxy throws `AwilixResolutionError` on a `get` for an
+ * unregistered key. Use `Object.keys` (it returns only registered names
+ * for both Awilix and plain-object test cradles) plus a try/catch to
+ * keep the optional integration silent when tenancy isn't installed.
+ */
+const safeCradleGet = <T>(
+  cradle: Record<string, unknown>,
+  key: string,
+  guard: (value: unknown) => value is T,
+): T | null => {
+  if (!Object.keys(cradle).includes(key)) return null;
+  try {
+    const value = cradle[key];
+    return guard(value) ? value : null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Populate `request.adminTenantInfo` from cradle-resolved tenancy
+ * repositories when present. Best-effort: silent no-op when the
+ * consumer doesn't register tenancy (single-tenant deployments) or
+ * when a repo call throws -- the layout simply hides the block.
+ */
+const attachAdminTenantInfo = (
+  cradle: Record<string, unknown>,
+): ((request: FastifyRequest) => Promise<void>) => {
+  const memberships = safeCradleGet(
+    cradle,
+    'membershipsRepository',
+    isMembershipsRepoShape,
+  );
+  const tenants = safeCradleGet(
+    cradle,
+    'tenantsRepository',
+    isTenantsRepoShape,
+  );
+  if (!memberships || !tenants) {
+    return async () => {};
+  }
+  return async (request) => {
+    const auth = request.auth;
+    if (!auth) return;
+    let canSwitch = false;
+    try {
+      const rows = await memberships.findAllForUser(auth.sub);
+      canSwitch = rows.length > 1;
+    } catch {
+      // best-effort
+    }
+    const currentId = request.tenant?.tenantId;
+    let label = currentId ?? null;
+    if (currentId) {
+      try {
+        const tenant = await tenants.findById(currentId);
+        label = tenant?.name ?? currentId;
+      } catch {
+        // fall back to id
+      }
+    }
+    request.adminTenantInfo = {
+      current: currentId ? { id: currentId, label: label ?? currentId } : null,
+      canSwitch,
+    };
+  };
 };
 
 const renderErrorPage = (
@@ -211,7 +307,14 @@ const adminPlugin: FastifyPluginAsync<AdminPluginOptions> = async (
       // Register formbody first so the login POST sees parsed form data.
       // `cookie` ships its own content-type parser so order doesn't matter.
       await scope.register(fastifyFormbody);
-      await scope.register(fastifyCookie);
+      // Consumers that wire `@fastify/cookie` at the root level (e.g. so
+      // the global tenancy resolver chain can read the admin-switcher
+      // cookie) will already have `reply.setCookie` here -- skip the
+      // inner registration to avoid Fastify's "decorator already
+      // exists" error.
+      if (!scope.hasReplyDecorator('setCookie')) {
+        await scope.register(fastifyCookie);
+      }
 
       scope.decorate('admin', context);
 
@@ -245,25 +348,32 @@ const adminPlugin: FastifyPluginAsync<AdminPluginOptions> = async (
           );
         }
         protectedScope.addHook('onRequest', verifyAdmin);
+        protectedScope.addHook('onRequest', attachAdminTenantInfo(cradle));
 
-        await protectedScope.register(dashboardRoute);
-        await protectedScope.register(listRoute);
-        await protectedScope.register(createRoute);
-        await protectedScope.register(detailRoute);
-        await protectedScope.register(updateRoute);
-        await protectedScope.register(deleteRoute);
-        await protectedScope.register(relationsRoute);
-
-        // HTML error page for full-page nav requests. Htmx requests fall
-        // through to the default JSON handler so the toast can display.
+        // HTML error page for full-page nav requests. Set BEFORE the
+        // route registrations: Fastify v5 only inherits the handler into
+        // child scopes that exist at the time of the call. Tenant-required
+        // errors redirect to the switcher; everything else renders the
+        // standard error page (htmx requests fall through to JSON).
         protectedScope.setErrorHandler((error, request, reply) => {
-          if (request.headers['hx-request'] !== undefined) {
-            throw error;
-          }
           const errRecord = error as {
             statusCode?: unknown;
             message?: unknown;
+            code?: unknown;
           };
+          if (errRecord.code === 'TENANT_REQUIRED_FOR_ADMIN') {
+            const url = `${prefix}/_tenants`;
+            if (request.headers['hx-request'] !== undefined) {
+              reply.header('hx-redirect', url);
+              reply.status(204);
+              return '';
+            }
+            reply.redirect(url);
+            return reply;
+          }
+          if (request.headers['hx-request'] !== undefined) {
+            throw error;
+          }
           const status =
             typeof errRecord.statusCode === 'number'
               ? errRecord.statusCode
@@ -275,6 +385,15 @@ const adminPlugin: FastifyPluginAsync<AdminPluginOptions> = async (
           reply.status(status).type('text/html; charset=utf-8');
           return renderErrorPage(runtimeOptions, status, message);
         });
+
+        await protectedScope.register(tenantsSwitcherRoute);
+        await protectedScope.register(dashboardRoute);
+        await protectedScope.register(listRoute);
+        await protectedScope.register(createRoute);
+        await protectedScope.register(detailRoute);
+        await protectedScope.register(updateRoute);
+        await protectedScope.register(deleteRoute);
+        await protectedScope.register(relationsRoute);
       });
     },
     { prefix },

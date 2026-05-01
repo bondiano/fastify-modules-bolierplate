@@ -29,6 +29,27 @@ export const Layout = ({ ctx, body }: LayoutProps): VNode => {
       </div>`
     : null;
 
+  const tenantBlock = ctx.tenant
+    ? html`<div class="admin-tenant">
+        <span class="admin-tenant__label muted">Tenant</span>
+        <span class="admin-tenant__name">
+          ${ctx.tenant.current ? ctx.tenant.current.label : 'Not selected'}
+        </span>
+        ${ctx.tenant.canSwitch || !ctx.tenant.current
+          ? html`<a
+              href=${ctx.tenant.switcherUrl}
+              class="admin-tenant__switch btn btn-secondary"
+              hx-get=${ctx.tenant.switcherUrl}
+              hx-target="#admin-main"
+              hx-swap="innerHTML"
+              hx-push-url="true"
+            >
+              ${ctx.tenant.current ? 'Switch' : 'Pick tenant'}
+            </a>`
+          : null}
+      </div>`
+    : null;
+
   const flashBlock = ctx.flash
     ? html`<div
         class=${`admin-flash admin-flash--${ctx.flash.kind}`}
@@ -38,23 +59,49 @@ export const Layout = ({ ctx, body }: LayoutProps): VNode => {
       </div>`
     : null;
 
-  const navItems = ctx.nav.map(
-    (item) =>
-      html`<li>
-        <a
-          href=${item.href}
-          class=${item.active
-            ? 'admin-nav__link admin-nav__link--active'
-            : 'admin-nav__link'}
-          hx-get=${item.href}
-          hx-target="#admin-main"
-          hx-swap="innerHTML"
-          hx-push-url="true"
-        >
-          ${item.label}
-        </a>
+  // Resources without a `group` go up top; everything else is bucketed
+  // under its group label, alphabetised so the rendering is stable.
+  type NavItem = (typeof ctx.nav)[number];
+  const ungrouped: NavItem[] = [];
+  const grouped: Record<string, NavItem[]> = {};
+  for (const item of ctx.nav) {
+    if (item.group === null) {
+      ungrouped.push(item);
+      continue;
+    }
+    (grouped[item.group] ??= []).push(item);
+  }
+  const groupNames = Object.keys(grouped).toSorted((a, b) =>
+    a.localeCompare(b),
+  );
+
+  const renderItem = (item: (typeof ctx.nav)[number]) =>
+    html`<li>
+      <a
+        href=${item.href}
+        class=${item.active
+          ? 'admin-nav__link admin-nav__link--active'
+          : 'admin-nav__link'}
+        hx-get=${item.href}
+        hx-target="#admin-main"
+        hx-swap="innerHTML"
+        hx-push-url="true"
+      >
+        ${item.label}
+      </a>
+    </li>`;
+
+  const ungroupedItems = ungrouped.map((item) => renderItem(item));
+  const groupSections = groupNames.map(
+    (name) =>
+      html`<li class="admin-nav__group">
+        <div class="admin-nav__group-label">${name}</div>
+        <ul class="admin-nav__group-list">
+          ${grouped[name]!.map((item) => renderItem(item))}
+        </ul>
       </li>`,
   );
+  const navItems = [...ungroupedItems, ...groupSections];
 
   return html`<html lang="en">
     <head>
@@ -69,7 +116,7 @@ export const Layout = ({ ctx, body }: LayoutProps): VNode => {
     <body>
       <header class="admin-header">
         <div class="admin-header__title">${ctx.title}</div>
-        ${userBlock}
+        ${tenantBlock} ${userBlock}
       </header>
       <div class="admin-shell">
         <nav class="admin-nav" aria-label="Admin sections">

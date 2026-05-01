@@ -41,12 +41,15 @@ export const createPostsService = ({ postsRepository }: PostsServiceDeps) => {
     },
 
     create: async (input: CreatePostInput) => {
+      // `tenantId` is auto-stamped by the scoped repository from the
+      // active tenant frame; `as never` matches the kit's pattern for
+      // sidestepping `Insertable<DB['posts']>`'s required `tenantId`.
       return postsRepository.create({
         title: input.title,
         content: input.content,
         status: input.status ?? 'draft',
         authorId: input.authorId,
-      });
+      } as never);
     },
 
     update: async (id: string, data: UpdatePostInput) => {

@@ -1,13 +1,14 @@
 import type { DB } from '#db/schema.ts';
-import {
-  createSoftDeleteRepository,
-  createSoftDeleteBulkOperations,
-  applySearch,
-} from '@kit/db/runtime';
+import { applySearch, createSoftDeleteBulkOperations } from '@kit/db/runtime';
 import type { Trx } from '@kit/db/transaction';
+import {
+  createTenantScopedSoftDeleteRepository,
+  type TenantContext,
+} from '@kit/tenancy';
 
 interface PostsRepositoryDeps {
   transaction: Trx<DB>;
+  tenantContext: TenantContext;
 }
 
 interface FindFilteredOptions {
@@ -20,15 +21,28 @@ interface FindFilteredOptions {
   order?: 'asc' | 'desc';
 }
 
-export const createPostsRepository = ({ transaction }: PostsRepositoryDeps) => {
-  const base = createSoftDeleteRepository<DB, 'posts'>(transaction, 'posts');
+export const createPostsRepository = ({
+  transaction,
+  tenantContext,
+}: PostsRepositoryDeps) => {
+  const scoped = createTenantScopedSoftDeleteRepository<DB, 'posts'>({
+    transaction,
+    tenantContext,
+    tableName: 'posts',
+  });
+  // Bulk operations are not yet tenant-scoped in the kit. Admin bulk
+  // mutations rely on the route's `assertTenantForResource` guard for
+  // safety; a future kit rev can layer the same `WHERE tenant_id`
+  // predicate onto the bulk paths.
   const bulk = createSoftDeleteBulkOperations<DB, 'posts'>(
     transaction,
     'posts',
   );
 
+  const currentTenantId = (): string => tenantContext.currentTenant().tenantId;
+
   return {
-    ...base,
+    ...scoped,
     ...bulk,
 
     findFiltered: async ({
@@ -41,11 +55,14 @@ export const createPostsRepository = ({ transaction }: PostsRepositoryDeps) => {
       order = 'desc',
     }: FindFilteredOptions) => {
       const offset = (page - 1) * limit;
+      const tenantId = currentTenantId();
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let query = (transaction as any)
         .selectFrom('posts')
         .selectAll()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .where((transaction as any).dynamic.ref('tenantId'), '=', tenantId)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .where((transaction as any).dynamic.ref('deletedAt'), 'is', null);
 
@@ -66,6 +83,8 @@ export const createPostsRepository = ({ transaction }: PostsRepositoryDeps) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let countQuery = (transaction as any)
         .selectFrom('posts')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .where((transaction as any).dynamic.ref('tenantId'), '=', tenantId)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .where((transaction as any).dynamic.ref('deletedAt'), 'is', null);
 

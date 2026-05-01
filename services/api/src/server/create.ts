@@ -1,3 +1,4 @@
+import fastifyCookie from '@fastify/cookie';
 import type { AwilixContainer } from 'awilix';
 import type { Redis } from 'ioredis';
 
@@ -12,6 +13,17 @@ import {
 } from '@kit/core/server';
 import { createErrorHandlerPlugin } from '@kit/errors/plugin';
 import { createJobsPlugin } from '@kit/jobs/plugin';
+import {
+  createTenancyPlugin,
+  fromCookie,
+  fromHeader,
+  fromJwtClaim,
+  fromUserDefault,
+  type ResolveMembershipFn,
+} from '@kit/tenancy';
+
+import { createAdminActionsPlugin } from './admin-actions.plugin.ts';
+import { createBestEffortAuthPlugin } from './best-effort-auth.plugin.ts';
 
 export interface CreateServerOptions {
   config: AppConfig;
@@ -48,6 +60,50 @@ export const createServer = async ({
       createErrorHandlerPlugin,
       createAuthPlugin,
       createAuthzPlugin,
+      createBestEffortAuthPlugin,
+      // `@fastify/cookie` is registered at the root so the global
+      // tenancy resolver chain below sees `request.cookies` for the
+      // admin tenant-switcher cookie. `@kit/admin` checks for the
+      // `setCookie` decorator and skips re-registering inside its own
+      // scope.
+      async (fastify) => {
+        await fastify.register(fastifyCookie);
+      },
+      {
+        plugin: createTenancyPlugin,
+        options: {
+          // Resolver chain runs in declaration order; first non-null wins.
+          // Public / pre-tenant routes opt out via `withTenantBypass()`.
+          // `__Host-admin_tenant` is the cookie name set by the admin's
+          // tenant switcher (RFC 6265bis `__Host-` prefix is part of the
+          // name, not stripped by parsers).
+          resolverOrder: [
+            fromHeader('x-tenant-id'),
+            fromCookie('__Host-admin_tenant'),
+            fromJwtClaim('tenant_id'),
+            fromUserDefault({
+              resolveDefaultTenant: (userId) => {
+                const { usersRepository } = container.cradle as Dependencies;
+                return usersRepository.findDefaultTenantId(userId);
+              },
+            }),
+          ],
+          // Closes the `X-Tenant-ID` / cookie / JWT-claim spoofing hole:
+          // the resolved tenant id is verified against the user's
+          // memberships before any scoped code runs. Returning `null`
+          // makes the plugin throw 403 `MembershipRequired`.
+          resolveMembership: (async ({ tenantId, userId }) => {
+            const { membershipsRepository } = container.cradle as Dependencies;
+            const membership = await membershipsRepository.findByUserAndTenant(
+              userId,
+              tenantId,
+            );
+            return membership
+              ? { tenantId: membership.tenantId, role: membership.role }
+              : null;
+          }) satisfies ResolveMembershipFn,
+        },
+      },
       {
         plugin: createAdminPlugin,
         options: {
@@ -57,6 +113,9 @@ export const createServer = async ({
             .pathname,
         },
       },
+      // Custom admin-prefix routes that back `defineAdminResource(...).detailActions`.
+      // Registered after `@kit/admin` so it can rely on `verifyAdmin`.
+      createAdminActionsPlugin,
       {
         plugin: createJobsPlugin,
         options: {

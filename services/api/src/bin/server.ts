@@ -3,6 +3,7 @@
 import { Redis } from 'ioredis';
 
 import { config } from '#config.ts';
+import { createRegistrationStore } from '#modules/auth/registration-store.ts';
 import { createTokenBlacklistService } from '#modules/auth/token-blacklist.service.ts';
 import { definePostAbilities } from '#modules/posts/posts.abilities.ts';
 import { defineUserAbilities } from '#modules/users/users.abilities.ts';
@@ -14,6 +15,7 @@ import { createLogger } from '@kit/core/logger';
 import { setupGracefulShutdown } from '@kit/core/server';
 import { closeDataSource, createDataSource, dbProvider } from '@kit/db/runtime';
 import { createTransactionStorage } from '@kit/db/transaction';
+import { createTenantContext, createTenantStorage } from '@kit/tenancy';
 
 const main = async () => {
   const logger = createLogger({
@@ -32,20 +34,36 @@ const main = async () => {
   });
 
   const transactionStorage = await createTransactionStorage();
+  const tenantStorage = createTenantStorage();
+  const tenantContext = createTenantContext({ tenantStorage });
   const redis = new Redis(config.REDIS_URL, { maxRetriesPerRequest: null });
 
   const container = await createContainer({
     logger,
     config,
-    extraValues: { dataSource, transactionStorage, redis },
+    extraValues: {
+      dataSource,
+      transactionStorage,
+      tenantStorage,
+      tenantContext,
+      redis,
+    },
     modulesGlobs: [
       `${import.meta.dirname}/../modules/**/*.{repository,service,mapper,client}.{js,ts}`,
     ],
     providers: [
       dbProvider(),
       authProvider({
-        resolveUserStore: ({ usersRepository }: Dependencies) =>
-          usersRepository.asUserStore(),
+        resolveUserStore: ({
+          transaction,
+          usersRepository,
+          tenantsService,
+        }: Dependencies) =>
+          createRegistrationStore({
+            transaction,
+            usersRepository,
+            tenantsService,
+          }),
         resolveTokenBlacklistStore: ({ redis }: Dependencies) =>
           createTokenBlacklistService({ redis }),
       }),

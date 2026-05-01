@@ -35,6 +35,7 @@ const makeTable = (columns: readonly ColumnMeta[]): TableMeta => ({
   columns,
   primaryKey: columns.filter((c) => c.isPrimaryKey).map((c) => c.rawName),
   hasSoftDelete: false,
+  hasTenantColumn: false,
 });
 
 describe('autogenValidators - create schema', () => {

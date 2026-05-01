@@ -20,6 +20,11 @@ export interface FormProps {
   readonly csrfToken: string;
   readonly action: string;
   readonly method: 'POST' | 'PATCH';
+  /**
+   * Active record id, required when `mode === 'update'` for
+   * `spec.detailActions` to render. Ignored on create.
+   */
+  readonly id?: string;
 }
 
 const isHiddenOnCreate = (field: FieldSpec): boolean =>
@@ -66,6 +71,7 @@ export const Form = ({
   csrfToken,
   action,
   method,
+  id,
 }: FormProps): VNode => {
   const byName = new Map(spec.fields.map((f) => [f.name, f] as const));
 
@@ -145,6 +151,42 @@ export const Form = ({
       >
         Cancel
       </a>
+      ${mode === 'update' && id !== undefined && spec.detailActions.length > 0
+        ? spec.detailActions.map((act) => {
+            const url = safeUrl(act.href(id));
+            const cls =
+              act.kind === 'danger' ? 'btn btn-danger' : 'btn btn-secondary';
+            const hxTarget = act.hxTarget ?? '#admin-main';
+            const hxConfirm = act.confirm;
+            // GET actions render as links so they're crawlable / right-
+            // clickable; POST actions render as buttons inside their
+            // own form (separate from the surrounding edit form).
+            return act.method === 'GET'
+              ? html`<a
+                  href=${url}
+                  class=${cls}
+                  hx-get=${url}
+                  hx-target=${hxTarget}
+                  hx-push-url="true"
+                  ...${hxConfirm ? { 'hx-confirm': hxConfirm } : {}}
+                >
+                  ${act.label}
+                </a>`
+              : html`<form
+                  method="post"
+                  action=${url}
+                  hx-post=${url}
+                  hx-target=${hxTarget}
+                  hx-swap="innerHTML"
+                  hx-push-url="true"
+                  ...${hxConfirm ? { 'hx-confirm': hxConfirm } : {}}
+                  class="form-action-inline"
+                >
+                  <input type="hidden" name="_csrf" value=${csrfToken} />
+                  <button type="submit" class=${cls}>${act.label}</button>
+                </form>`;
+          })
+        : null}
     </div>
   </form>`;
 };

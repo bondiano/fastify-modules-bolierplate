@@ -54,6 +54,7 @@ const postsTable: TableMeta = {
   ],
   primaryKey: ['id'],
   hasSoftDelete: false,
+  hasTenantColumn: false,
 };
 
 vi.mock('./schema/index.js', async () => {

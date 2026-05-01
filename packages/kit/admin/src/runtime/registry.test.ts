@@ -23,6 +23,8 @@ const makeSpec = (name: string): AdminResourceSpec => ({
   rowActions: [],
   permissions: { subject: null },
   hasSoftDelete: false,
+  tenantScoped: false,
+  scope: 'system',
   validators: { create: Type.Object({}), update: Type.Object({}) },
 });
 

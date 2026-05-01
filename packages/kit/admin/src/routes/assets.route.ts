@@ -10,6 +10,9 @@ import type { FastifyPluginAsync } from 'fastify';
 
 const CACHE_CONTROL = 'public, max-age=3600';
 
+// Static assets are public; tenancy resolution would 400 them otherwise.
+const BYPASS_CONFIG = { tenant: 'bypass' as const };
+
 const readAsset = async (name: string): Promise<string> => {
   const path = fileURLToPath(new URL(`../../assets/${name}`, import.meta.url));
   return readFile(path, 'utf8');
@@ -22,23 +25,35 @@ export const assetsRoute: FastifyPluginAsync = async (fastify) => {
     readAsset('admin.js'),
   ]);
 
-  fastify.get('/_assets/admin.css', async (_request, reply) => {
-    reply.type('text/css; charset=utf-8');
-    reply.header('cache-control', CACHE_CONTROL);
-    return css;
-  });
+  fastify.get(
+    '/_assets/admin.css',
+    { config: BYPASS_CONFIG },
+    async (_request, reply) => {
+      reply.type('text/css; charset=utf-8');
+      reply.header('cache-control', CACHE_CONTROL);
+      return css;
+    },
+  );
 
-  fastify.get('/_assets/htmx.min.js', async (_request, reply) => {
-    reply.type('application/javascript; charset=utf-8');
-    reply.header('cache-control', CACHE_CONTROL);
-    return js;
-  });
+  fastify.get(
+    '/_assets/htmx.min.js',
+    { config: BYPASS_CONFIG },
+    async (_request, reply) => {
+      reply.type('application/javascript; charset=utf-8');
+      reply.header('cache-control', CACHE_CONTROL);
+      return js;
+    },
+  );
 
-  fastify.get('/_assets/admin.js', async (_request, reply) => {
-    reply.type('application/javascript; charset=utf-8');
-    reply.header('cache-control', CACHE_CONTROL);
-    return adminJs;
-  });
+  fastify.get(
+    '/_assets/admin.js',
+    { config: BYPASS_CONFIG },
+    async (_request, reply) => {
+      reply.type('application/javascript; charset=utf-8');
+      reply.header('cache-control', CACHE_CONTROL);
+      return adminJs;
+    },
+  );
 };
 
 export default assetsRoute;

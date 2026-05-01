@@ -10,6 +10,7 @@ import type {
   AbilityFactory,
   AppAbility,
   AuthzAction,
+  AuthzMembership,
   AuthzSubject,
   AuthzUser,
 } from './ability.js';
@@ -27,6 +28,14 @@ declare module 'fastify' {
   interface FastifyRequest {
     /** Per-request CASL ability, populated lazily on first `authorize` call. */
     ability?: AppAbility;
+    /**
+     * Optional active membership the consumer populates before any
+     * `authorize` hook runs (typically in a preHandler that reads
+     * `request.tenant` + `request.auth` and looks up the row from
+     * `membershipsRepository`). Module definers see this via the third
+     * argument to `DefineAbilities`.
+     */
+    membership?: AuthzMembership;
   }
   interface FastifyInstance {
     /**
@@ -57,6 +66,15 @@ export interface AuthzPluginOptions {
    * `request.auth` (populated by `@kit/auth`'s `verifyJwt` decorator).
    */
   getUser?: (request: FastifyRequest) => AuthzUser | undefined;
+  /**
+   * Override how the active membership is read off the request. Defaults to
+   * `request.membership` (populated by a consumer-owned preHandler that
+   * reads `request.tenant` + `request.auth` and looks up the membership
+   * row). Single-tenant apps typically leave this `undefined`.
+   */
+  getMembership?: (
+    request: FastifyRequest,
+  ) => Promise<AuthzMembership | undefined> | AuthzMembership | undefined;
 }
 
 const defaultGetUser = (request: FastifyRequest): AuthzUser | undefined => {
@@ -67,6 +85,10 @@ const defaultGetUser = (request: FastifyRequest): AuthzUser | undefined => {
   return { id: auth.sub, role: auth.role };
 };
 
+const defaultGetMembership = (
+  request: FastifyRequest,
+): AuthzMembership | undefined => request.membership;
+
 const authzPlugin: FastifyPluginAsync<AuthzPluginOptions> = async (
   fastify,
   opts,
@@ -76,8 +98,10 @@ const authzPlugin: FastifyPluginAsync<AuthzPluginOptions> = async (
     ((f: FastifyInstance) =>
       (f as FastifyWithDi).diContainer.cradle.abilityFactory);
   const getUser = opts.getUser ?? defaultGetUser;
+  const getMembership = opts.getMembership ?? defaultGetMembership;
 
   fastify.decorateRequest('ability');
+  fastify.decorateRequest('membership');
 
   fastify.decorate('authorize', function (action, subject, getSubject) {
     return async function authorizeHook(request: FastifyRequest) {
@@ -90,7 +114,8 @@ const authzPlugin: FastifyPluginAsync<AuthzPluginOptions> = async (
 
       if (!request.ability) {
         const factory = resolveFactory(fastify);
-        request.ability = factory.buildFor(user);
+        const membership = await getMembership(request);
+        request.ability = factory.buildFor(user, membership);
       }
 
       const target = getSubject

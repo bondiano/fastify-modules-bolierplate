@@ -13,7 +13,7 @@ describe('tenant context', () => {
   let context: TenantContext;
 
   beforeEach(async () => {
-    storage = await createTenantStorage();
+    storage = createTenantStorage();
     context = createTenantContext({ tenantStorage: storage });
   });
 

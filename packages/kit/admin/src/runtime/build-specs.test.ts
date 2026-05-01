@@ -42,6 +42,7 @@ const postsTable: TableMeta = {
   columns: [idColumn, titleColumn],
   primaryKey: ['id'],
   hasSoftDelete: false,
+  hasTenantColumn: false,
 };
 
 const makeRegistry = (tables: readonly TableMeta[]): SchemaRegistry => ({

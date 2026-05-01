@@ -8,7 +8,6 @@ import {
   AuthResultSchema,
   RefreshResultSchema,
 } from '@kit/auth/schemas';
-import { withRateLimit } from '@kit/core/server';
 import {
   createSuccessResponseSchema,
   apiErrorEnvelopeSchema,
@@ -18,11 +17,14 @@ import {
 const authRoute: FastifyPluginAsyncTypebox = async (fastify) => {
   const { authService } = fastify.diContainer.cradle;
 
-  // POST /auth/register
+  // POST /auth/register -- runs before any tenant exists for this user.
   fastify.route({
     method: 'POST',
     url: '/register',
-    ...withRateLimit({ max: 10, timeWindow: '1 minute' }),
+    config: {
+      tenant: 'bypass',
+      rateLimit: { max: 10, timeWindow: '1 minute' },
+    },
     schema: {
       tags: ['auth'],
       body: RegisterBodySchema,
@@ -37,11 +39,15 @@ const authRoute: FastifyPluginAsyncTypebox = async (fastify) => {
     },
   });
 
-  // POST /auth/login
+  // POST /auth/login -- bypass; the JWT may carry a tenant claim later
+  // but at login time the request has no resolved tenant yet.
   fastify.route({
     method: 'POST',
     url: '/login',
-    ...withRateLimit({ max: 5, timeWindow: '1 minute' }),
+    config: {
+      tenant: 'bypass',
+      rateLimit: { max: 5, timeWindow: '1 minute' },
+    },
     schema: {
       tags: ['auth'],
       body: LoginBodySchema,
@@ -60,7 +66,10 @@ const authRoute: FastifyPluginAsyncTypebox = async (fastify) => {
   fastify.route({
     method: 'POST',
     url: '/refresh',
-    ...withRateLimit({ max: 10, timeWindow: '1 minute' }),
+    config: {
+      tenant: 'bypass',
+      rateLimit: { max: 10, timeWindow: '1 minute' },
+    },
     schema: {
       tags: ['auth'],
       body: RefreshBodySchema,
@@ -79,6 +88,7 @@ const authRoute: FastifyPluginAsyncTypebox = async (fastify) => {
   fastify.route({
     method: 'POST',
     url: '/logout',
+    config: { tenant: 'bypass' },
     schema: {
       tags: ['auth'],
       body: LogoutBodySchema,
@@ -96,6 +106,7 @@ const authRoute: FastifyPluginAsyncTypebox = async (fastify) => {
   fastify.route({
     method: 'POST',
     url: '/clear-sessions',
+    config: { tenant: 'bypass' },
     schema: {
       tags: ['auth'],
       response: {

@@ -19,16 +19,45 @@ export interface PageRenderContext {
   readonly assetPrefix: string;
   readonly csrfToken: string;
   /** Pre-computed nav items ordered left-to-right / top-to-bottom. */
-  readonly nav: readonly {
-    readonly href: string;
-    readonly label: string;
-    readonly active: boolean;
-  }[];
+  readonly nav: readonly NavItem[];
   readonly user?: { readonly email: string; readonly role: string };
   readonly flash?: {
     readonly kind: 'success' | 'error';
     readonly message: string;
   };
+  /**
+   * Active tenant + switcher metadata. Populated by
+   * `buildRenderContext` only when the request carries a tenant frame
+   * (or when memberships are detectable via the cradle); the layout
+   * hides the block entirely when omitted, so single-tenant deployments
+   * pay no visual cost.
+   */
+  readonly tenant?: TenantBlock;
+}
+
+export interface NavItem {
+  readonly href: string;
+  readonly label: string;
+  readonly active: boolean;
+  /**
+   * Side-nav group label. Items sharing the same `group` are rendered
+   * under a common heading; `null` items appear at the top level above
+   * any groups. Mirrors `AdminResourceSpec.group`.
+   */
+  readonly group: string | null;
+}
+
+export interface TenantCurrent {
+  readonly id: string;
+  readonly label: string;
+}
+
+export interface TenantBlock {
+  /** `null` when the user has not picked a tenant yet. */
+  readonly current: TenantCurrent | null;
+  readonly switcherUrl: string;
+  /** `true` when the user has > 1 membership and the switcher is useful. */
+  readonly canSwitch: boolean;
 }
 
 /**

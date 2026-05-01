@@ -5,6 +5,7 @@ import type { Kysely } from 'kysely';
 import type { DB } from '#db/schema.ts';
 import type { AbilityFactory, DefineAbilities } from '@kit/authz';
 import type { Trx, TransactionStorage } from '@kit/db/transaction';
+import type { TenantContext, TenantStorage } from '@kit/tenancy';
 
 declare global {
   interface Dependencies {
@@ -14,6 +15,8 @@ declare global {
     transaction: Trx<DB>;
     abilityDefiners: readonly DefineAbilities[];
     abilityFactory: AbilityFactory;
+    tenantStorage: TenantStorage;
+    tenantContext: TenantContext;
   }
 }
 

@@ -38,7 +38,7 @@ const querySchema = Type.Composite([
 const postsRoute: FastifyPluginAsyncTypebox = async (fastify) => {
   const { postsService, postsMapper } = fastify.diContainer.cradle;
 
-  // GET /posts -- List posts (paginated, filtered)
+  // GET /posts -- List posts (paginated, filtered) within the active tenant
   fastify.route({
     method: 'GET',
     url: '/',
@@ -49,6 +49,7 @@ const postsRoute: FastifyPluginAsyncTypebox = async (fastify) => {
         200: createPaginatedEnvelopeSchema(postResponseSchema),
       },
     },
+    onRequest: [fastify.verifyUser],
     handler: async (request) => {
       const query = request.query as FindFilteredInput;
       const result = await postsService.findFiltered(query);
@@ -63,7 +64,7 @@ const postsRoute: FastifyPluginAsyncTypebox = async (fastify) => {
     },
   });
 
-  // GET /posts/:id
+  // GET /posts/:id -- scoped to the caller's active tenant
   fastify.route({
     method: 'GET',
     url: '/:id',
@@ -75,6 +76,7 @@ const postsRoute: FastifyPluginAsyncTypebox = async (fastify) => {
         404: apiErrorEnvelopeSchema,
       },
     },
+    onRequest: [fastify.verifyUser],
     handler: async (request) => {
       const post = await postsService.findById(request.params.id);
       return ok(postsMapper.toResponse(post));

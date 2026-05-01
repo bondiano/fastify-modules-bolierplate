@@ -8,15 +8,45 @@ import { Value } from '@sinclair/typebox/value';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { VNode } from 'preact';
 
-import { ForbiddenException, InternalServerErrorException } from '@kit/errors';
+import {
+  BadRequestException,
+  ForbiddenException,
+  InternalServerErrorException,
+} from '@kit/errors';
 
 import { renderFragment, renderPage } from '../render.js';
 import { buildRenderContext, isHtmxRequest } from '../runtime/context.js';
 import type { AdminContext } from '../runtime/context.js';
+import type { AdminResourceSpec } from '../types.js';
 
 export interface RawBody {
   readonly [key: string]: unknown;
 }
+
+/**
+ * Throw `BadRequestException` when a tenant-scoped resource is accessed
+ * without an active tenant frame on the request. The admin plugin marks
+ * its public routes (`/login`, `/_assets/*`) as tenancy-bypassed, so
+ * the consumer's tenancy resolver chain runs only on protected routes;
+ * for tenant-scoped resources we still require `request.tenant` to be
+ * populated. The cookie-backed tenant switcher (`P2.tenancy.11`) is
+ * what surfaces a friendly redirect for system admins; until it lands,
+ * this check produces a 400 with a clear hint.
+ */
+export const assertTenantForResource = (
+  spec: AdminResourceSpec,
+  request: FastifyRequest,
+): void => {
+  if (!spec.tenantScoped) return;
+  const tenant = (
+    request as FastifyRequest & { tenant?: { readonly tenantId: string } }
+  ).tenant;
+  if (tenant && tenant.tenantId.length > 0) return;
+  throw new BadRequestException(
+    `Resource "${spec.name}" requires a tenant context; pick a tenant first.`,
+    { code: 'TENANT_REQUIRED_FOR_ADMIN' },
+  );
+};
 
 /**
  * Narrow `fastify.admin` to a guaranteed `AdminContext`, throwing a
