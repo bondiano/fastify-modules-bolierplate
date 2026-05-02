@@ -5,6 +5,62 @@ chain, an `AsyncLocalStorage`-backed `TenantContext`, and a `tenantScoped()`
 repository reshape on top of `@kit/db`'s `BaseRepository`. Apps that don't
 register `createTenancyPlugin` pay zero cost.
 
+## Running without tenancy
+
+Single-tenant services skip this package entirely. Concrete reference:
+`services/api-single` -- the same `@kit/core` + `@kit/db` + `@kit/schemas`
++ `@kit/errors` stack as `services/api`, but with no `tenant_id`, no
+resolver chain, and no `@kit/tenancy` dep. Compare side-by-side to see
+exactly what tenancy adds on top of the kit.
+
+To strip tenancy from an existing service:
+
+1. **Drop the dep.** Remove `@kit/tenancy` from `package.json`.
+2. **Drop the plugin.** Remove `createTenancyPlugin` (and the cookie /
+   resolver wiring it depends on) from `server/create.ts`. Drop
+   `tenantStorage` / `tenantContext` from `extraValues` and from any
+   `Dependencies` augmentation.
+3. **Switch repositories.** Replace `createTenantScopedRepository` /
+   `createTenantScopedSoftDeleteRepository` with `createBaseRepository`
+   / `createSoftDeleteRepository` from `@kit/db/runtime`. Drop the
+   `tenantContext` dep from each repository factory.
+4. **Drop the column.** Remove `tenant_id` from the table definition in
+   `db/schema.ts` and write a migration that drops the column + its FK.
+   You can also delete the tenant migrations themselves
+   (`create_tenants`, `create_memberships`, `create_invitations`) if
+   nothing else references them.
+5. **Simplify auth.** If you used the registration store that stamps a
+   personal tenant + owner membership on signup
+   (`services/api/src/modules/auth/registration-store.ts`), replace it
+   with a plain user insert.
+
+Do NOT branch business logic on a `TENANCY_ENABLED` flag. Either the
+module needs tenancy (declare the dep, use scoped repos) or it does
+not (use the base repos and stay ignorant of tenants entirely).
+`if (tenancy) ...` ladders are the failure mode this package's
+"Conventions" section warns against.
+
+### What still works without tenancy
+
+- `@kit/core` -- DI container, server factory, helmet/cors/rate-limit
+  defaults, swagger.
+- `@kit/db` -- data source, transaction proxy, base + soft-delete
+  repositories.
+- `@kit/auth` / `@kit/authz` -- both are independent of tenancy. Auth
+  flows just don't open a tenant frame on register/login. Authz still
+  works at the user/role level (the `manage all` admin short-circuit is
+  the relevant pattern).
+- `@kit/schemas` / `@kit/errors` / `@kit/jobs` / `@kit/admin` -- all
+  agnostic. `@kit/admin` auto-detects `tenant_id` columns; without them
+  it just renders un-scoped CRUD.
+
+### What you lose
+
+Everything tenancy-shaped: per-tenant data isolation, membership-based
+authz scoping, the resolver chain, the admin tenant switcher, the
+invitation flow. If you later need any of that, follow "How to make a
+module tenant-scoped" in this file -- it works in either direction.
+
 ## Directory
 
 ```

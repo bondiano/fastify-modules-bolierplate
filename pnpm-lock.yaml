@@ -663,6 +663,82 @@ importers:
         specifier: ^4.1.4
         version: 4.1.4(@types/node@25.6.0)(vite@7.3.2(@types/node@25.6.0)(yaml@2.8.3))
 
+  services/api-single:
+    dependencies:
+      '@fastify/awilix':
+        specifier: ^8.2.0
+        version: 8.2.0(awilix@13.0.3)(fastify@5.8.4)
+      '@fastify/type-provider-typebox':
+        specifier: ^6.1.0
+        version: 6.1.0(typebox@1.1.23)
+      '@kit/config':
+        specifier: workspace:*
+        version: link:../../packages/kit/config
+      '@kit/core':
+        specifier: workspace:*
+        version: link:../../packages/kit/core
+      '@kit/db':
+        specifier: workspace:*
+        version: link:../../packages/kit/db
+      '@kit/errors':
+        specifier: workspace:*
+        version: link:../../packages/kit/errors
+      '@kit/schemas':
+        specifier: workspace:*
+        version: link:../../packages/kit/schemas
+      '@sinclair/typebox':
+        specifier: ^0.34.49
+        version: 0.34.49
+      awilix:
+        specifier: ^13.0.3
+        version: 13.0.3
+      citty:
+        specifier: ^0.2.2
+        version: 0.2.2
+      fastify:
+        specifier: ^5.8.4
+        version: 5.8.4
+      kysely:
+        specifier: ^0.28.16
+        version: 0.28.16
+      pino:
+        specifier: ^10.3.1
+        version: 10.3.1
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+    devDependencies:
+      '@electric-sql/pglite':
+        specifier: ^0.2.17
+        version: 0.2.17
+      '@kit/eslint-config':
+        specifier: workspace:*
+        version: link:../../packages/kit/eslint-config
+      '@kit/test':
+        specifier: workspace:*
+        version: link:../../packages/kit/test
+      '@kit/ts-config':
+        specifier: workspace:*
+        version: link:../../packages/kit/ts-config
+      '@types/node':
+        specifier: ^25.6.0
+        version: 25.6.0
+      eslint:
+        specifier: ^10.2.0
+        version: 10.2.0
+      kysely-pglite:
+        specifier: ^0.6.1
+        version: 0.6.1(@electric-sql/pglite@0.2.17)(kysely@0.28.16)(pg@8.20.0)
+      pino-pretty:
+        specifier: ^13.1.3
+        version: 13.1.3
+      typescript:
+        specifier: ^6.0.2
+        version: 6.0.2
+      vitest:
+        specifier: ^4.1.4
+        version: 4.1.4(@types/node@25.6.0)(vite@7.3.2(@types/node@25.6.0)(yaml@2.8.3))
+
   tools/generators:
     dependencies:
       '@effect/cli':
