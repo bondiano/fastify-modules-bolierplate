@@ -15,8 +15,10 @@ import { getRepo } from '../runtime/context.js';
 import type { AdminDiscoverable } from '../types.js';
 
 import {
+  _adminAuditToRecord,
   assertAdminContext,
   assertTenantForResource,
+  emitAuditFromAdmin,
   headerCsrf,
   verifyCsrfOrThrow,
 } from './_helpers.js';
@@ -63,6 +65,11 @@ export const deleteRoute: FastifyPluginAsync = async (fastify) => {
       if (!removed)
         throw new NotFoundException(`${spec.label} ${id} not found`);
 
+      emitAuditFromAdmin(request, spec, 'delete', {
+        id,
+        before: _adminAuditToRecord(removed),
+      });
+
       reply.status(200).type('text/html; charset=utf-8');
       return '';
     },
@@ -93,13 +100,30 @@ export const deleteRoute: FastifyPluginAsync = async (fastify) => {
 
       const repo = getRepo(ctx, spec);
 
-      const count = await match(repo)
-        .when(hasBulkDelete, (r) => r.bulkDelete(ids))
-        .otherwise(async (r) => {
+      // For audit coverage on bulk delete we walk the ids serially so
+      // each row gets its own emission with the row's `before` state.
+      // The bulk-delete path is rare and admin-only; the per-row cost is
+      // acceptable to avoid losing audit fidelity.
+      const auditOn = spec.auditEnabled;
+      const count = await match({ repo, auditOn })
+        .when(
+          ({ repo: r, auditOn: a }) => !a && hasBulkDelete(r),
+          ({ repo: r }) =>
+            (
+              r as { bulkDelete: (ids: readonly string[]) => Promise<number> }
+            ).bulkDelete(ids),
+        )
+        .otherwise(async ({ repo: r }) => {
           let n = 0;
           for (const id of ids) {
+            const before = auditOn
+              ? _adminAuditToRecord(await r.findById(id))
+              : null;
             const removed = await r.deleteById(id);
-            if (removed) n += 1;
+            if (removed) {
+              n += 1;
+              emitAuditFromAdmin(request, spec, 'delete', { id, before });
+            }
           }
           return n;
         });

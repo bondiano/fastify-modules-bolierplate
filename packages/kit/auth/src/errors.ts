@@ -56,3 +56,39 @@ export class ForbiddenError extends AuthError {
     super(message, 403, 'ForbiddenError');
   }
 }
+
+// -------------------------------------------------------------------------
+// Token-based flow errors (password reset / email verify / OTP)
+// -------------------------------------------------------------------------
+
+/**
+ * Thrown when `confirmPasswordReset` / `confirmEmailVerification` /
+ * `verifyOtp` receive a token / code that doesn't match a live row.
+ * Callers MUST NOT distinguish between "no such token", "expired", and
+ * "already used" -- doing so leaks whether a value was ever valid. The
+ * three cases collapse into a single 401 with the same message.
+ */
+export class InvalidTokenFlowError extends AuthError {
+  constructor(message = 'Invalid or expired token') {
+    super(message, 401, 'InvalidTokenFlowError');
+  }
+}
+
+/** Thrown when a verified email is required but the user hasn't verified. */
+export class EmailNotVerifiedError extends AuthError {
+  constructor(message = 'Email verification required') {
+    super(message, 403, 'EmailNotVerifiedError');
+  }
+}
+
+/**
+ * Thrown when an OTP exceeds `OTP_MAX_ATTEMPTS`. The caller should
+ * present this as "too many attempts; request a new code" -- the
+ * underlying row is marked used and any further verify attempts return
+ * `InvalidTokenFlowError` until a fresh request lands.
+ */
+export class OtpLockedOutError extends AuthError {
+  constructor(message = 'Too many failed attempts; request a new code') {
+    super(message, 429, 'OtpLockedOutError');
+  }
+}

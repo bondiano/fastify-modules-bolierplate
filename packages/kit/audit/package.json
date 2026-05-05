@@ -1,0 +1,63 @@
+{
+  "name": "@kit/audit",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./plugin": {
+      "types": "./dist/plugin.d.ts",
+      "import": "./dist/plugin.js"
+    },
+    "./schema": {
+      "types": "./dist/schema.d.ts",
+      "import": "./dist/schema.js"
+    },
+    "./repository": {
+      "types": "./dist/audit-log-repository.d.ts",
+      "import": "./dist/audit-log-repository.js"
+    },
+    "./diff": {
+      "types": "./dist/diff.d.ts",
+      "import": "./dist/diff.js"
+    }
+  },
+  "files": [
+    "dist",
+    "migrations"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "lint": "eslint .",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@kit/core": "workspace:*",
+    "@kit/db": "workspace:*",
+    "@kit/errors": "workspace:*",
+    "@kit/tenancy": "workspace:*",
+    "awilix": "^13.0.3",
+    "fastify-plugin": "^5.1.0",
+    "kysely": "^0.28.16"
+  },
+  "devDependencies": {
+    "@kit/eslint-config": "workspace:*",
+    "@kit/test": "workspace:*",
+    "@kit/ts-config": "workspace:*",
+    "@types/node": "^25.6.0",
+    "fastify": "^5.8.4",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.4"
+  },
+  "peerDependencies": {
+    "fastify": "^5.0.0"
+  }
+}

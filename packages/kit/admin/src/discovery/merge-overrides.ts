@@ -88,6 +88,7 @@ const mergeList = (
     search: override.search ?? inferred.search,
     defaultSort: override.defaultSort ?? inferred.defaultSort,
     sortableFields: override.sortableFields ?? inferred.sortableFields,
+    filters: override.filters ?? inferred.filters,
   };
 };
 
@@ -166,6 +167,19 @@ export const mergeOverrides = (
 
   const detailActions = override.detailActions ?? inferred.detailActions;
 
+  const sensitiveColumns =
+    override.sensitiveColumns ?? inferred.sensitiveColumns;
+
+  const auditEnabled =
+    override.auditEnabled === undefined
+      ? inferred.auditEnabled
+      : override.auditEnabled;
+
+  const readOnlyResource =
+    override.readOnlyResource === undefined
+      ? inferred.readOnlyResource
+      : override.readOnlyResource;
+
   return {
     ...inferred,
     label: override.label ?? inferred.label,
@@ -180,5 +194,8 @@ export const mergeOverrides = (
     scope,
     group,
     detailActions,
+    sensitiveColumns,
+    auditEnabled,
+    readOnlyResource,
   };
 };

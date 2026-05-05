@@ -142,6 +142,30 @@ for the full resolver-chain reference, the
 `createTenantScopedRepository` API, the invitation event hook, and the
 "how to make a module tenant-scoped" recipe.
 
+### Audit (`@kit/audit`)
+
+Append-only `audit_log` table + a `request.audit(action, subject, diff?,
+metadata?)` Fastify decorator. Entries buffer per-request and flush in a
+single batched INSERT on `onResponse`; auto-enriched with response status
+and Fastify request id. Redaction is layered (global regex patterns
++ per-resource `sensitiveColumns`); redacted entries set
+`audit_log.sensitive = true`.
+
+`@kit/admin`'s create/update/delete routes call `request.audit(...)`
+automatically -- no per-module wiring needed for CRUD coverage. Update
+routes fetch a `before` snapshot via `repo.findById` so the diff is
+real. Per-resource opt-out via `defineAdminResource({ auditEnabled:
+false })`.
+
+`services/api/src/modules/audit/jobs/maintenance/audit-prune.job.ts`
+runs daily at 03:00 UTC and deletes rows older than
+`AUDIT_RETENTION_DAYS` (default 90 days). The audit log itself is
+browseable at `/admin/audit_log` with filter UI (actor / subject /
+action / date range) and a side-by-side `before/after` diff renderer.
+
+See [`packages/kit/audit/CLAUDE.md`](./packages/kit/audit/CLAUDE.md)
+for the full API and conventions.
+
 ## Commands
 
 ```bash

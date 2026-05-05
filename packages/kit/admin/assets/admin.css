@@ -543,3 +543,91 @@ a:hover {
   flex: none;
   vertical-align: middle;
 }
+
+/* ---------------------------- Filter row ----------------------------- */
+
+.admin-data-table__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+  margin: 8px 0 12px;
+  padding: 12px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.admin-filter,
+.admin-filter--range {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 160px;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.admin-filter > span,
+.admin-filter > legend {
+  font-size: 12px;
+  color: var(--fg-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-filter--range {
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.admin-filter--range > legend {
+  flex-basis: 100%;
+}
+
+/* ----------------------------- JSON diff ----------------------------- */
+
+.admin-json-diff {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.admin-json-diff th,
+.admin-json-diff td {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  vertical-align: top;
+  text-align: left;
+}
+
+.admin-json-diff thead th {
+  background: var(--bg-alt);
+  font-weight: 600;
+}
+
+.admin-json-diff__before {
+  background: rgba(220, 50, 50, 0.06);
+  color: var(--fg);
+  white-space: pre-wrap;
+}
+
+.admin-json-diff__after {
+  background: rgba(40, 170, 80, 0.06);
+  color: var(--fg);
+  white-space: pre-wrap;
+}
+
+.admin-json-diff__empty,
+.admin-json-diff__raw {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12px;
+  color: var(--fg-muted);
+  background: var(--bg-alt);
+  padding: 12px;
+  border-radius: var(--radius);
+  white-space: pre-wrap;
+}

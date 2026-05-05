@@ -48,6 +48,7 @@ const makeSpec = (): AdminResourceSpec => ({
     search: ['title', 'content'],
     defaultSort: { field: 'createdAt', order: 'desc' },
     sortableFields: ['id', 'title', 'content'],
+    filters: [],
   },
   form: { fieldsets: null },
   relations: {},
@@ -58,6 +59,9 @@ const makeSpec = (): AdminResourceSpec => ({
   scope: 'system',
   group: null,
   detailActions: [],
+  sensitiveColumns: [],
+  auditEnabled: true,
+  readOnlyResource: false,
   validators: { create: Type.Object({}), update: Type.Object({}) },
 });
 

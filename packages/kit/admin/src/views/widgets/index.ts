@@ -11,6 +11,7 @@ import { CheckboxInput } from './checkbox.js';
 import { DateInput } from './date.js';
 import { DateTimeInput } from './datetime.js';
 import { HiddenInput } from './hidden.js';
+import { JsonDiffInput } from './json-diff.js';
 import { JsonInput } from './json.js';
 import { NumberInput } from './number.js';
 import { RadioGroup } from './radio-group.js';
@@ -36,6 +37,7 @@ const WIDGET_BY_KIND: Readonly<
   date: DateInput,
   datetime: DateTimeInput,
   json: JsonInput,
+  'json-diff': JsonDiffInput,
   autocomplete: AutocompleteInput,
   hidden: HiddenInput,
   readonly: ReadonlyField,

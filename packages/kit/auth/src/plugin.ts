@@ -6,16 +6,18 @@ import type {
 import fp from 'fastify-plugin';
 
 import {
+  EmailNotVerifiedError,
   ForbiddenError,
   TokenRevokedError,
   UnauthorizedError,
 } from './errors.js';
-import type { TokenBlacklistStore } from './stores.js';
+import type { TokenBlacklistStore, UserStore } from './stores.js';
 import type { AccessTokenPayload, TokenService } from './tokens.js';
 
 interface AuthCradle {
   tokenService: TokenService;
   tokenBlacklistStore: TokenBlacklistStore;
+  userStore: UserStore;
 }
 
 interface FastifyWithDi extends FastifyInstance {
@@ -30,12 +32,18 @@ declare module 'fastify' {
     verifyJwt: (request: FastifyRequest) => Promise<void>;
     verifyUser: (request: FastifyRequest) => Promise<void>;
     verifyAdmin: (request: FastifyRequest) => Promise<void>;
+    /** Gate handler that combines `verifyJwt` with a check on
+     * `users.email_verified_at`. Throws `EmailNotVerifiedError` (403,
+     * code `EmailNotVerifiedError`) when the authenticated user has not
+     * yet confirmed ownership of their email. */
+    requireVerifiedEmail: (request: FastifyRequest) => Promise<void>;
   }
 }
 
 export interface AuthPluginOptions {
   resolveTokenService?: (fastify: FastifyInstance) => TokenService;
   resolveBlacklistStore?: (fastify: FastifyInstance) => TokenBlacklistStore;
+  resolveUserStore?: (fastify: FastifyInstance) => UserStore;
 }
 
 const extractBearer = (header: string | undefined): string => {
@@ -60,6 +68,10 @@ const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (
     opts.resolveBlacklistStore ??
     ((f: FastifyInstance) =>
       (f as FastifyWithDi).diContainer.cradle.tokenBlacklistStore);
+
+  const resolveUserStore =
+    opts.resolveUserStore ??
+    ((f: FastifyInstance) => (f as FastifyWithDi).diContainer.cradle.userStore);
 
   fastify.decorateRequest('auth');
 
@@ -98,6 +110,20 @@ const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (
     await fastify.verifyJwt(request);
     if (request.auth?.role !== 'admin') throw new ForbiddenError();
   });
+
+  fastify.decorate(
+    'requireVerifiedEmail',
+    async function (request: FastifyRequest) {
+      await fastify.verifyJwt(request);
+      const sub = request.auth?.sub;
+      if (!sub) throw new UnauthorizedError();
+      const userStore = resolveUserStore(fastify);
+      const user = await userStore.findById(sub);
+      if (!user || user.emailVerifiedAt === null) {
+        throw new EmailNotVerifiedError();
+      }
+    },
+  );
 };
 
 export const createAuthPlugin = fp(authPlugin, {

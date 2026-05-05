@@ -16,6 +16,8 @@ import type {
   AdminResourceDefinition,
   AdminResourceOverride,
   AdminResourceSpec,
+  FilterSpec,
+  ListViewSpec,
   RelationDescriptor,
   SchemaRegistry,
 } from '../types.js';
@@ -48,6 +50,53 @@ const resolveRelations = async (
       typeof value === 'function' ? await value({ cradle }) : value;
   }
   return resolved;
+};
+
+/**
+ * Materialise `FilterSpec` entries with `options: 'distinct'` by querying
+ * the backing repository's `distinctValues(column)` helper at boot. Falls
+ * back to a single empty option when the repo doesn't expose the helper
+ * -- the filter still renders, just with no preset values.
+ */
+const resolveListFilters = async (
+  list: ListViewSpec,
+  repo: AdminDiscoverable,
+  logger?: BuildAdminSpecsLogger,
+): Promise<ListViewSpec> => {
+  const distinctsNeeded = list.filters.some(
+    (f) => f.kind === 'select' && f.options === 'distinct',
+  );
+  if (!distinctsNeeded) return list;
+
+  const resolved: FilterSpec[] = [];
+  for (const filter of list.filters) {
+    if (filter.kind !== 'select' || filter.options !== 'distinct') {
+      resolved.push(filter);
+      continue;
+    }
+    if (typeof repo.distinctValues !== 'function') {
+      logger?.warn(
+        { table: repo.table, column: filter.name },
+        '@kit/admin: filter declared options:"distinct" but repository has no distinctValues(); rendering empty',
+      );
+      resolved.push({ ...filter, options: [] });
+      continue;
+    }
+    try {
+      const values = await repo.distinctValues(filter.name);
+      resolved.push({
+        ...filter,
+        options: values.map((v) => ({ value: v, label: v })),
+      });
+    } catch (error) {
+      logger?.warn(
+        { table: repo.table, column: filter.name, err: error },
+        '@kit/admin: distinctValues() threw; rendering empty filter',
+      );
+      resolved.push({ ...filter, options: [] });
+    }
+  }
+  return { ...list, filters: resolved };
 };
 
 export const buildAdminSpecs = async (
@@ -92,6 +141,15 @@ export const buildAdminSpecs = async (
       finalSpec = mergeOverrides(inferred, override, resolvedRelations);
     } else {
       finalSpec = mergeOverrides(inferred, undefined, {});
+    }
+
+    const resolvedList = await resolveListFilters(
+      finalSpec.list,
+      disc.repository,
+      logger,
+    );
+    if (resolvedList !== finalSpec.list) {
+      finalSpec = { ...finalSpec, list: resolvedList };
     }
 
     specs.push(finalSpec);

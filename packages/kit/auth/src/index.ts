@@ -2,6 +2,7 @@ export * from './config.js';
 export * from './errors.js';
 export * from './password.js';
 export * from './tokens.js';
+export * from './token-utilities.js';
 export * from './stores.js';
 export * from './auth.service.js';
 export * from './schemas.js';

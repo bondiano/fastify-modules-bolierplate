@@ -47,6 +47,14 @@ export const createRegistrationStore = ({
           joinedAt: new Date().toISOString(),
         })
         .execute();
-      return user;
+      return {
+        id: user.id,
+        email: user.email,
+        passwordHash: user.passwordHash,
+        role: user.role,
+        emailVerifiedAt: user.emailVerifiedAt,
+      };
     }),
+  updatePasswordHash: usersRepository.updatePasswordHash,
+  markEmailVerified: usersRepository.markEmailVerified,
 });

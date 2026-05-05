@@ -15,10 +15,12 @@ import { safeUrl } from '../safe-url.js';
 import { Form } from '../views/index.js';
 
 import {
+  _adminAuditToRecord,
   assertAdminContext,
   assertTenantForResource,
   buildRenderValues,
   collectErrors,
+  emitAuditFromAdmin,
   extractCsrf,
   formatRepoError,
   respondHtml,
@@ -107,8 +109,10 @@ export const createRoute: FastifyPluginAsync = async (fastify) => {
 
       const repo = getRepo(ctx, spec);
 
+      let created: Record<string, unknown> | null;
       try {
-        await repo.create(data);
+        const result = await repo.create(data);
+        created = _adminAuditToRecord(result);
       } catch (error) {
         const csrfToken = ctx.csrf.issue(request.auth?.sub ?? 'anon');
         const form = Form({
@@ -126,6 +130,17 @@ export const createRoute: FastifyPluginAsync = async (fastify) => {
           activeResource: spec.name,
         });
       }
+
+      const id =
+        created && typeof created['id'] === 'string'
+          ? (created['id'] as string)
+          : created && typeof created['id'] === 'number'
+            ? String(created['id'])
+            : '';
+      emitAuditFromAdmin(request, spec, 'create', {
+        id,
+        after: created,
+      });
 
       const listUrl = safeUrl(`${ctx.options.prefix}/${spec.name}`);
       if (isHtmxRequest(request)) {

@@ -13,10 +13,12 @@ import { safeUrl } from '../safe-url.js';
 import { Form } from '../views/index.js';
 
 import {
+  _adminAuditToRecord,
   assertAdminContext,
   assertTenantForResource,
   buildRenderValues,
   collectErrors,
+  emitAuditFromAdmin,
   extractCsrf,
   formatRepoError,
   respondHtml,
@@ -73,10 +75,20 @@ export const updateRoute: FastifyPluginAsync = async (fastify) => {
 
       const repo = getRepo(ctx, spec);
 
+      // Fetch the BEFORE state so the audit emission can record a real
+      // diff. One extra DB round-trip per admin update -- acceptable for
+      // an interactive admin path. Skipped silently when the spec has
+      // audit disabled (the row is fetched anyway when needed below).
+      const before = spec.auditEnabled
+        ? _adminAuditToRecord(await repo.findById(id))
+        : null;
+
+      let after: Record<string, unknown> | null;
       try {
         const updated = await repo.update(id, data);
         if (!updated)
           throw new NotFoundException(`${spec.label} ${id} not found`);
+        after = _adminAuditToRecord(updated);
       } catch (error) {
         if (error instanceof NotFoundException) throw error;
 
@@ -97,6 +109,12 @@ export const updateRoute: FastifyPluginAsync = async (fastify) => {
           activeResource: spec.name,
         });
       }
+
+      emitAuditFromAdmin(request, spec, 'update', {
+        id,
+        before,
+        after,
+      });
 
       const listUrl = safeUrl(`${ctx.options.prefix}/${spec.name}`);
       if (isHtmxRequest(request)) {

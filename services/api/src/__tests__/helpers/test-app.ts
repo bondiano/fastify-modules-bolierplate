@@ -64,6 +64,14 @@ export const createTestApp = async (): Promise<TestApp<DB>> => {
           }),
         resolveTokenBlacklistStore: ({ redis }: Dependencies) =>
           createTokenBlacklistService({ redis }),
+        resolvePasswordResetTokenStore: ({
+          passwordResetTokenRepository,
+        }: Dependencies) => passwordResetTokenRepository,
+        resolveEmailVerificationTokenStore: ({
+          emailVerificationTokenRepository,
+        }: Dependencies) => emailVerificationTokenRepository,
+        resolveOtpCodeStore: ({ otpCodeRepository }: Dependencies) =>
+          otpCodeRepository,
       }),
       authzProvider({
         definers: [defineUserAbilities, definePostAbilities],

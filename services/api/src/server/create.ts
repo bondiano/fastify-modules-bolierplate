@@ -4,6 +4,7 @@ import type { Redis } from 'ioredis';
 
 import type { AppConfig } from '#config.ts';
 import { createAdminPlugin } from '@kit/admin/plugin';
+import { createAuditPlugin } from '@kit/audit/plugin';
 import { createAuthPlugin } from '@kit/auth/plugin';
 import { createAuthzPlugin } from '@kit/authz/plugin';
 import type { Logger } from '@kit/core/logger';
@@ -104,6 +105,11 @@ export const createServer = async ({
           }) satisfies ResolveMembershipFn,
         },
       },
+      // Audit plugin sits between tenancy and admin so `request.audit()` can
+      // read both `request.auth?.sub` (actor) and `request.tenant?.tenantId`
+      // (active tenant) at flush time. Failure to persist is logged but
+      // never thrown -- audit must not break the response.
+      createAuditPlugin,
       {
         plugin: createAdminPlugin,
         options: {

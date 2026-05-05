@@ -26,6 +26,10 @@
       "types": "./dist/tokens.d.ts",
       "import": "./dist/tokens.js"
     },
+    "./token-utilities": {
+      "types": "./dist/token-utilities.d.ts",
+      "import": "./dist/token-utilities.js"
+    },
     "./service": {
       "types": "./dist/auth.service.d.ts",
       "import": "./dist/auth.service.js"
@@ -41,6 +45,18 @@
     "./provider": {
       "types": "./dist/provider.d.ts",
       "import": "./dist/provider.js"
+    },
+    "./templates/password-reset": {
+      "types": "./dist/templates/password-reset.d.ts",
+      "import": "./dist/templates/password-reset.js"
+    },
+    "./templates/email-verification": {
+      "types": "./dist/templates/email-verification.d.ts",
+      "import": "./dist/templates/email-verification.js"
+    },
+    "./templates/otp": {
+      "types": "./dist/templates/otp.d.ts",
+      "import": "./dist/templates/otp.js"
     }
   },
   "files": [

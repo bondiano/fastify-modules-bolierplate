@@ -128,3 +128,103 @@ For admin-only routes use `fastify.verifyAdmin`.
 | `UnauthorizedError`       | 401    |
 | `ForbiddenError`          | 403    |
 | `UserAlreadyExistsError`  | 409    |
+| `InvalidTokenFlowError`   | 401    |
+| `EmailNotVerifiedError`   | 403    |
+| `OtpLockedOutError`       | 429    |
+
+## Token-based flows (password reset / email verification / OTP)
+
+The auth service ships three token-driven flows on top of the
+session-token primitives. Each follows the same shape:
+
+1. A request endpoint persists `sha256(token)` in a DB-backed store and
+   fires a typed mailer event (callback) with the raw token. Real
+   delivery lands in `P2.mailer.*`; for now consumers wire a stub
+   handler that renders + logs.
+2. A confirm endpoint hashes the incoming token, looks up the row, and
+   atomically marks it used. Failures (no row / expired / used) all
+   collapse into `InvalidTokenFlowError` so the response shape doesn't
+   leak which step blocked it.
+
+| Flow              | Request endpoint                      | Confirm endpoint                       | TTL (default) |
+| ----------------- | ------------------------------------- | -------------------------------------- | ------------- |
+| Password reset    | `POST /auth/password-reset/request`   | `POST /auth/password-reset/confirm`    | 60 min        |
+| Email verify      | `POST /auth/email-verification/request` | `POST /auth/email-verification/confirm` | 24 h          |
+| OTP (MFA)         | `POST /auth/otp/request`              | `POST /auth/otp/verify`                | 5 min, max 5 attempts |
+
+### Stores
+
+`@kit/auth/stores` declares three additional interfaces -- the consumer
+service implements each against its own DB (the boilerplate uses
+Kysely-backed repositories under
+`services/api/src/modules/auth/{password-reset-token,email-verification-token,otp-code}.repository.ts`):
+
+- `PasswordResetTokenStore` -- `create / findByTokenHash / markUsed /
+pruneExpired`. `markUsed` returns `false` when the row has already
+  been redeemed.
+- `EmailVerificationTokenStore` -- mirrors the above but with
+  `findByTokenHash` returning the email snapshot too (replay safety on
+  email rotation) and `markVerified`.
+- `OtpCodeStore` -- adds `findActive({ userId, purpose })`,
+  `incrementAttempts(id)` (atomic, returns the new count), and
+  `markUsed(id)`.
+
+### Mailer events
+
+`AuthProviderOptions` accepts three optional callbacks fired AFTER the
+matching DB row commits:
+
+- `onPasswordResetRequested(event)` -- `{ userId, email, token, expiresAt }`
+- `onEmailVerificationRequested(event)` -- same shape
+- `onOtpRequested(event)` -- `{ userId, email, purpose, code, expiresAt }`
+
+Each ships with a pure renderer at `@kit/auth/templates/<flow>` that
+returns a `KitMailMessage` (`{ to, subject, text, html }`). The `services/api`
+boilerplate wires the renderers to `logger.info(...)` stubs in
+`bin/server.ts`; swap to a real mailer adapter once `P2.mailer.*` lands.
+
+### `requireVerifiedEmail` decorator
+
+`fastify.requireVerifiedEmail` wraps `verifyJwt` and additionally
+checks `users.email_verified_at`. Use it on routes that demand a real
+email (e.g. billing checkout, GDPR data exports). Returns
+`EmailNotVerifiedError` (403, code `EmailNotVerifiedError`) when the
+flag is `null`.
+
+```ts
+fastify.route({
+  method: 'POST',
+  url: '/billing/checkout',
+  onRequest: [fastify.requireVerifiedEmail],
+  handler: ...,
+});
+```
+
+### Security notes
+
+- **Enumeration safety.** `requestPasswordReset` always resolves
+  silently when the email is unknown -- the route returns 204
+  unconditionally. Pair with route-level rate limiting (5/min/IP for
+  password reset, 3/min for OTP request).
+- **Timing.** Token comparison uses `compareTokens` (`crypto.timingSafeEqual`
+  for equal-length strings); raw tokens never reach the DB so the
+  comparison is `hash(input) === stored_hash`, also constant-effort.
+- **OTP lockout.** `verifyOtp` increments attempts BEFORE comparing the
+  hash, so a slow comparator cannot be replayed for free. Once the
+  count crosses `OTP_MAX_ATTEMPTS`, the row is marked used and any
+  further verify attempts hit `InvalidTokenFlowError` until a fresh
+  `requestOtp` lands.
+- **Session-clear on reset.** `confirmPasswordReset` runs
+  `clearSessions(userId)` so a stolen access token cannot keep the
+  account alive after the legitimate user resets.
+
+### Adding a new token-based flow
+
+1. Add a migration for the storage table (`{flow}_tokens`).
+2. Declare a `Store` interface in your service module mirroring
+   `PasswordResetTokenStore`.
+3. Implement it as a Kysely repository under
+   `modules/<flow>/<flow>-token.repository.ts`.
+4. Extend `AuthService` with the request/confirm methods (or write a
+   sibling service if the flow doesn't fit the auth surface).
+5. Add a `request.audit(...)` emission for both endpoints.

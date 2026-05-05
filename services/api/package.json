@@ -34,6 +34,7 @@
     "@fastify/redis": "^7.2.0",
     "@fastify/type-provider-typebox": "^6.1.0",
     "@kit/admin": "workspace:*",
+    "@kit/audit": "workspace:*",
     "@kit/auth": "workspace:*",
     "@kit/authz": "workspace:*",
     "@kit/config": "workspace:*",

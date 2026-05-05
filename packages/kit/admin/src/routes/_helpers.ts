@@ -177,6 +177,84 @@ export const formatRepoError = (error: unknown): string => {
 };
 
 /**
+ * Subset of the `request.audit()` decorator surface this module needs.
+ * Mirrors `@kit/audit`'s public type without taking a hard import
+ * dependency on that package -- the admin runs without the audit kit
+ * registered (the call becomes a no-op).
+ */
+type AdminAuditFn = (
+  action: string,
+  subject: { readonly type: string; readonly id: string },
+  diff?: {
+    readonly before?: Record<string, unknown> | null;
+    readonly after?: Record<string, unknown> | null;
+    readonly sensitiveColumns?: readonly string[];
+  },
+  metadata?: Record<string, unknown>,
+) => void;
+
+const toRecord = (value: unknown): Record<string, unknown> | null => {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== 'object') return null;
+  return value as Record<string, unknown>;
+};
+
+const pickId = (
+  row: Record<string, unknown> | null,
+  fallback: string,
+): string => {
+  if (!row) return fallback;
+  const id = row['id'];
+  if (typeof id === 'string') return id;
+  if (typeof id === 'number') return String(id);
+  return fallback;
+};
+
+/**
+ * Emit a CRUD audit entry for an admin route. Silent no-op when:
+ * - the spec opted out (`auditEnabled: false`),
+ * - the consumer hasn't registered `@kit/audit` (decorator missing),
+ * - or the row payload is empty for a delete/create that skipped the work.
+ *
+ * Subject type prefers `spec.permissions.subject` (the CASL tag, e.g.
+ * `'Post'`); falls back to the human label so we never log a blank type.
+ */
+export const emitAuditFromAdmin = (
+  request: FastifyRequest,
+  spec: AdminResourceSpec,
+  action: 'create' | 'update' | 'delete',
+  payload: {
+    readonly id: string;
+    readonly before?: Record<string, unknown> | null;
+    readonly after?: Record<string, unknown> | null;
+  },
+): void => {
+  if (!spec.auditEnabled) return;
+  const audit = (request as FastifyRequest & { audit?: AdminAuditFn }).audit;
+  if (typeof audit !== 'function') return;
+
+  const subjectType = spec.permissions.subject ?? spec.label;
+  const subjectId =
+    payload.id.length > 0
+      ? payload.id
+      : pickId(payload.after ?? null, '') || pickId(payload.before ?? null, '');
+  if (subjectId.length === 0) return;
+
+  audit(
+    action,
+    { type: subjectType, id: subjectId },
+    {
+      ...(payload.before === undefined ? {} : { before: payload.before }),
+      ...(payload.after === undefined ? {} : { after: payload.after }),
+      sensitiveColumns: spec.sensitiveColumns,
+    },
+    { source: 'admin' },
+  );
+};
+
+export { toRecord as _adminAuditToRecord };
+
+/**
  * Respond with an HTML fragment (htmx swap) or a full page depending
  * on the request type. Sets `text/html` content type automatically.
  */

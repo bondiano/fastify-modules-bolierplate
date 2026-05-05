@@ -69,6 +69,14 @@ const container = await createContainer({
         }),
       resolveTokenBlacklistStore: ({ redis }: Dependencies) =>
         createTokenBlacklistService({ redis }),
+      resolvePasswordResetTokenStore: ({
+        passwordResetTokenRepository,
+      }: Dependencies) => passwordResetTokenRepository,
+      resolveEmailVerificationTokenStore: ({
+        emailVerificationTokenRepository,
+      }: Dependencies) => emailVerificationTokenRepository,
+      resolveOtpCodeStore: ({ otpCodeRepository }: Dependencies) =>
+        otpCodeRepository,
     }),
     authzProvider({
       definers: [defineUserAbilities, definePostAbilities],

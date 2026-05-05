@@ -17,6 +17,7 @@ const makeSpec = (name: string): AdminResourceSpec => ({
     search: [],
     defaultSort: { field: 'id', order: 'desc' },
     sortableFields: [],
+    filters: [],
   },
   form: { fieldsets: null },
   relations: {},
@@ -25,6 +26,11 @@ const makeSpec = (name: string): AdminResourceSpec => ({
   hasSoftDelete: false,
   tenantScoped: false,
   scope: 'system',
+  group: null,
+  detailActions: [],
+  sensitiveColumns: [],
+  auditEnabled: true,
+  readOnlyResource: false,
   validators: { create: Type.Object({}), update: Type.Object({}) },
 });
 

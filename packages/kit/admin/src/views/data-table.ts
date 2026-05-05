@@ -86,6 +86,8 @@ export const DataTable = ({
     (query['order'] ?? spec.list.defaultSort.order) === 'asc' ? 'asc' : 'desc';
   const rowsId = `${spec.name}-rows`;
 
+  const showActions = !spec.readOnlyResource;
+
   const header = html`<thead>
     <tr>
       ${columns.map((col) => {
@@ -116,14 +118,18 @@ export const DataTable = ({
           </a>
         </th>`;
       })}
-      <th scope="col" class="col-actions">Actions</th>
+      ${showActions
+        ? html`<th scope="col" class="col-actions">Actions</th>`
+        : null}
     </tr>
   </thead>`;
+
+  const totalCols = columns.length + (showActions ? 1 : 0);
 
   const body = html`<tbody id=${rowsId}>
     ${rows.length === 0
       ? html`<tr class="empty">
-          <td colspan=${columns.length + 1}>No results.</td>
+          <td colspan=${totalCols}>No results.</td>
         </tr>`
       : rows.map((row) => {
           const id = pickId(row);
@@ -134,28 +140,30 @@ export const DataTable = ({
               const f = fieldByName.get(col);
               return html`<td>${formatCell(row[col], f)}</td>`;
             })}
-            <td class="col-actions">
-              <a
-                href=${editHref}
-                hx-get=${editHref}
-                hx-target="#admin-main"
-                hx-swap="innerHTML"
-                hx-push-url="true"
-                class="btn btn-secondary btn-sm"
-              >
-                <${Icon} name="pencil" /> Edit
-              </a>
-              <button
-                type="button"
-                class="btn btn-danger btn-sm"
-                hx-delete=${deleteHref}
-                hx-target=${`#${spec.name}-${id}`}
-                hx-swap="outerHTML"
-                hx-confirm="Delete this record?"
-              >
-                <${Icon} name="trash" /> Delete
-              </button>
-            </td>
+            ${showActions
+              ? html`<td class="col-actions">
+                  <a
+                    href=${editHref}
+                    hx-get=${editHref}
+                    hx-target="#admin-main"
+                    hx-swap="innerHTML"
+                    hx-push-url="true"
+                    class="btn btn-secondary btn-sm"
+                  >
+                    <${Icon} name="pencil" /> Edit
+                  </a>
+                  <button
+                    type="button"
+                    class="btn btn-danger btn-sm"
+                    hx-delete=${deleteHref}
+                    hx-target=${`#${spec.name}-${id}`}
+                    hx-swap="outerHTML"
+                    hx-confirm="Delete this record?"
+                  >
+                    <${Icon} name="trash" /> Delete
+                  </button>
+                </td>`
+              : null}
           </tr>`;
         })}
   </tbody>`;
@@ -171,20 +179,102 @@ export const DataTable = ({
   const disabledPrevious = pagination.page <= 1;
   const disabledNext = pagination.page >= pagination.totalPages;
 
+  const filterRow =
+    spec.list.filters.length === 0
+      ? null
+      : html`<form
+          class="admin-data-table__filters"
+          method="get"
+          action=${listUrl}
+          hx-get=${listUrl}
+          hx-target="#admin-main"
+          hx-swap="innerHTML"
+          hx-push-url="true"
+        >
+          <input type="hidden" name="orderBy" value=${currentOrderBy} />
+          <input type="hidden" name="order" value=${currentOrder} />
+          ${spec.list.filters.map((f) => {
+            const idAttribute = `filter-${f.name}`;
+            if (f.kind === 'text') {
+              return html`<label class="admin-filter" for=${idAttribute}>
+                <span>${f.label}</span>
+                <input
+                  id=${idAttribute}
+                  type="text"
+                  name=${f.name}
+                  value=${query[f.name] ?? ''}
+                  class="form-input"
+                />
+              </label>`;
+            }
+            if (f.kind === 'select') {
+              const opts =
+                f.options === 'distinct'
+                  ? [{ value: '', label: 'All' }]
+                  : [{ value: '', label: 'All' }, ...f.options];
+              return html`<label class="admin-filter" for=${idAttribute}>
+                <span>${f.label}</span>
+                <select id=${idAttribute} name=${f.name} class="form-input">
+                  ${opts.map(
+                    (o) =>
+                      html`<option
+                        value=${o.value}
+                        selected=${query[f.name] === o.value || undefined}
+                      >
+                        ${o.label}
+                      </option>`,
+                  )}
+                </select>
+              </label>`;
+            }
+            // date-range
+            const fromName = `${f.name}From`;
+            const toName = `${f.name}To`;
+            return html`<fieldset class="admin-filter admin-filter--range">
+              <legend>${f.label}</legend>
+              <label for=${`${idAttribute}-from`}>
+                <span>From</span>
+                <input
+                  id=${`${idAttribute}-from`}
+                  type="date"
+                  name=${fromName}
+                  value=${query[fromName] ?? ''}
+                  class="form-input"
+                />
+              </label>
+              <label for=${`${idAttribute}-to`}>
+                <span>To</span>
+                <input
+                  id=${`${idAttribute}-to`}
+                  type="date"
+                  name=${toName}
+                  value=${query[toName] ?? ''}
+                  class="form-input"
+                />
+              </label>
+            </fieldset>`;
+          })}
+          <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+          <a href=${listUrl} class="btn btn-secondary btn-sm">Clear</a>
+        </form>`;
+
   return html`<section class="admin-data-table" data-resource=${spec.name}>
     <header class="admin-data-table__header">
       <h1>${spec.label}</h1>
-      <a
-        href=${newUrl}
-        hx-get=${newUrl}
-        hx-target="#admin-main"
-        hx-swap="innerHTML"
-        hx-push-url="true"
-        class="btn btn-primary"
-      >
-        <${Icon} name="plus" /> New
-      </a>
+      ${showActions
+        ? html`<a
+            href=${newUrl}
+            hx-get=${newUrl}
+            hx-target="#admin-main"
+            hx-swap="innerHTML"
+            hx-push-url="true"
+            class="btn btn-primary"
+          >
+            <${Icon} name="plus" /> New
+          </a>`
+        : null}
     </header>
+    ${filterRow}
     <form
       class="admin-data-table__search"
       onsubmit="return false"

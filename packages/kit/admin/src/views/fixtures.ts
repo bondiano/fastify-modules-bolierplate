@@ -52,6 +52,7 @@ export const makeResourceSpec = (
       search: ['title'],
       defaultSort: { field: 'id', order: 'desc' },
       sortableFields: ['id', 'title'],
+      filters: [],
     },
     form: { fieldsets: null },
     relations: {},
@@ -62,6 +63,9 @@ export const makeResourceSpec = (
     scope: 'system',
     group: null,
     detailActions: [],
+    sensitiveColumns: [],
+    auditEnabled: true,
+    readOnlyResource: false,
     validators: {
       create: Type.Object({}),
       update: Type.Object({}),

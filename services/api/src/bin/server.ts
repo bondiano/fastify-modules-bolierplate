@@ -9,6 +9,9 @@ import { definePostAbilities } from '#modules/posts/posts.abilities.ts';
 import { defineUserAbilities } from '#modules/users/users.abilities.ts';
 import { createServer } from '#server/create.ts';
 import { authProvider } from '@kit/auth/provider';
+import { renderEmailVerificationEmail } from '@kit/auth/templates/email-verification';
+import { renderOtpEmail } from '@kit/auth/templates/otp';
+import { renderPasswordResetEmail } from '@kit/auth/templates/password-reset';
 import { authzProvider } from '@kit/authz/provider';
 import { createContainer } from '@kit/core/di';
 import { createLogger } from '@kit/core/logger';
@@ -66,6 +69,46 @@ const main = async () => {
           }),
         resolveTokenBlacklistStore: ({ redis }: Dependencies) =>
           createTokenBlacklistService({ redis }),
+        resolvePasswordResetTokenStore: ({
+          passwordResetTokenRepository,
+        }: Dependencies) => passwordResetTokenRepository,
+        resolveEmailVerificationTokenStore: ({
+          emailVerificationTokenRepository,
+        }: Dependencies) => emailVerificationTokenRepository,
+        resolveOtpCodeStore: ({ otpCodeRepository }: Dependencies) =>
+          otpCodeRepository,
+        // Stub mailer hooks: render the message and log it. Real
+        // delivery lands in P2.mailer.* -- swap the body for
+        // `mailer.send(message)` then.
+        onPasswordResetRequested: async (event) => {
+          const message = renderPasswordResetEmail(event, {
+            resetUrl: `${config.APP_URL}/auth/password-reset/confirm`,
+            productName: config.APP_NAME,
+          });
+          logger.info(
+            { to: message.to, subject: message.subject },
+            '[mail-stub] password reset',
+          );
+        },
+        onEmailVerificationRequested: async (event) => {
+          const message = renderEmailVerificationEmail(event, {
+            verifyUrl: `${config.APP_URL}/auth/email-verification/confirm`,
+            productName: config.APP_NAME,
+          });
+          logger.info(
+            { to: message.to, subject: message.subject },
+            '[mail-stub] email verification',
+          );
+        },
+        onOtpRequested: async (event) => {
+          const message = renderOtpEmail(event, {
+            productName: config.APP_NAME,
+          });
+          logger.info(
+            { to: message.to, subject: message.subject },
+            '[mail-stub] OTP',
+          );
+        },
       }),
       authzProvider({
         definers: [defineUserAbilities, definePostAbilities],

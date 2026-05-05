@@ -159,6 +159,7 @@ export const inferSpec = (opts: InferSpecOptions): AdminResourceSpec => {
     search: buildSearch(tableMeta.columns),
     defaultSort: buildDefaultSort(tableMeta),
     sortableFields: buildSortable(tableMeta),
+    filters: [],
   };
 
   return {
@@ -178,6 +179,9 @@ export const inferSpec = (opts: InferSpecOptions): AdminResourceSpec => {
     scope: tableMeta.hasTenantColumn ? 'tenant' : 'system',
     group: null,
     detailActions: [],
+    sensitiveColumns: [],
+    auditEnabled: true,
+    readOnlyResource: false,
     validators: { create: validators.create, update: validators.update },
   };
 };
