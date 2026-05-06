@@ -1,0 +1,7 @@
+Your trial ends {{trialEndsAt}}.
+
+Hi {{customerName}}, your free trial of the {{planName}} plan on {{productName}} ends on {{trialEndsAt}}.
+
+To continue without interruption, add a payment method or confirm your subscription details.
+
+Manage subscription: {{manageUrl}}

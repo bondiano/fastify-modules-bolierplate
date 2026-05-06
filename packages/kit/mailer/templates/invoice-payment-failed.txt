@@ -1,0 +1,7 @@
+We couldn't process your payment.
+
+Hi {{customerName}}, the payment for invoice {{invoiceNumber}} ({{amount}}) on {{productName}} did not go through.
+
+Update your payment method or retry the charge from the billing portal to keep your subscription active.
+
+Update payment: {{retryUrl}}

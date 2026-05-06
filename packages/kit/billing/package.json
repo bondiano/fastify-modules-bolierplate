@@ -1,0 +1,84 @@
+{
+  "name": "@kit/billing",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "import": "./dist/config.js"
+    },
+    "./schema": {
+      "types": "./dist/schema.d.ts",
+      "import": "./dist/schema.js"
+    },
+    "./events": {
+      "types": "./dist/events.d.ts",
+      "import": "./dist/events.js"
+    },
+    "./repository": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./providers": {
+      "types": "./dist/providers/index.d.ts",
+      "import": "./dist/providers/index.js"
+    },
+    "./provider": {
+      "types": "./dist/provider.d.ts",
+      "import": "./dist/provider.js"
+    },
+    "./plugin": {
+      "types": "./dist/plugin.d.ts",
+      "import": "./dist/plugin.js"
+    }
+  },
+  "files": [
+    "dist",
+    "migrations"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "lint": "eslint .",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@kit/core": "workspace:*",
+    "@kit/db": "workspace:*",
+    "@kit/errors": "workspace:*",
+    "@kit/jobs": "workspace:*",
+    "@kit/tenancy": "workspace:*",
+    "awilix": "^13.0.3",
+    "fastify-plugin": "^5.1.0",
+    "kysely": "^0.28.16",
+    "zod": "^4.3.6"
+  },
+  "peerDependencies": {
+    "fastify": "^5.0.0",
+    "ioredis": "^5.0.0",
+    "stripe": "^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "stripe": { "optional": true }
+  },
+  "devDependencies": {
+    "@kit/eslint-config": "workspace:*",
+    "@kit/test": "workspace:*",
+    "@kit/ts-config": "workspace:*",
+    "@types/node": "^25.6.0",
+    "fastify": "^5.8.4",
+    "ioredis": "^5.10.1",
+    "stripe": "^19.0.0",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.4"
+  }
+}

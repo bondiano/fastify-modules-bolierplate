@@ -46,17 +46,9 @@
       "types": "./dist/provider.d.ts",
       "import": "./dist/provider.js"
     },
-    "./templates/password-reset": {
-      "types": "./dist/templates/password-reset.d.ts",
-      "import": "./dist/templates/password-reset.js"
-    },
-    "./templates/email-verification": {
-      "types": "./dist/templates/email-verification.d.ts",
-      "import": "./dist/templates/email-verification.js"
-    },
-    "./templates/otp": {
-      "types": "./dist/templates/otp.d.ts",
-      "import": "./dist/templates/otp.js"
+    "./oauth": {
+      "types": "./dist/oauth/index.d.ts",
+      "import": "./dist/oauth/index.js"
     }
   },
   "files": [

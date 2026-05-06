@@ -7,6 +7,7 @@ import { createAdminPlugin } from '@kit/admin/plugin';
 import { createAuditPlugin } from '@kit/audit/plugin';
 import { createAuthPlugin } from '@kit/auth/plugin';
 import { createAuthzPlugin } from '@kit/authz/plugin';
+import { createBillingPlugin } from '@kit/billing/plugin';
 import type { Logger } from '@kit/core/logger';
 import {
   createServer as createKitServer,
@@ -122,6 +123,10 @@ export const createServer = async ({
       // Custom admin-prefix routes that back `defineAdminResource(...).detailActions`.
       // Registered after `@kit/admin` so it can rely on `verifyAdmin`.
       createAdminActionsPlugin,
+      // `@kit/billing` ships a tiny plugin that decorates
+      // `fastify.requireFeature(key)`. Registered after admin so the
+      // entitlements service is resolvable from the cradle.
+      createBillingPlugin,
       {
         plugin: createJobsPlugin,
         options: {

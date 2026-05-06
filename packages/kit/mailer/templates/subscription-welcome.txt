@@ -1,0 +1,7 @@
+You're on the {{planName}} plan, {{customerName}}.
+
+Thanks for subscribing to {{productName}}. Your account is fully activated.
+
+Open the dashboard: {{dashboardUrl}}
+
+Manage your subscription anytime from the billing portal.

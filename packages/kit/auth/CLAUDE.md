@@ -228,3 +228,118 @@ fastify.route({
 4. Extend `AuthService` with the request/confirm methods (or write a
    sibling service if the flow doesn't fit the auth surface).
 5. Add a `request.audit(...)` emission for both endpoints.
+
+## Social login (OAuth Authorization Code + PKCE)
+
+Phase 2d ships **Google + GitHub** providers (Apple + Microsoft are
+scaffolded as throwing stubs for `P3.social.*`). Authorization Code +
+PKCE per RFC 9700 (Jan 2025 BCP) -- PKCE is required for ALL clients
+including confidential server-side ones.
+
+### Routes
+
+| Method | URL                                  | Auth   | Notes                                  |
+| ------ | ------------------------------------ | ------ | -------------------------------------- |
+| POST   | /auth/oauth/:provider/start          | --     | Returns `{ authorizeUrl }`             |
+| GET    | /auth/oauth/:provider/callback       | --     | Exchanges code, redirects to returnTo  |
+| POST   | /auth/oauth/:provider/link           | Bearer | Links a new identity to the current user |
+| DELETE | /auth/oauth/:provider                | Bearer | Unlinks; refuses if it's the last login |
+
+### State signing (no cookie)
+
+The `state` param is a signed JWT (HS256, 10-min exp) carrying:
+
+- `nonce` -- replay guard;
+- `returnTo` -- destination after callback (validated against the
+  `APP_URL` origin);
+- `codeVerifier` -- PKCE secret (stored alongside the rest of the
+  state because there's no server-side session to anchor it to);
+- `providerId` -- which provider the callback is expected from;
+- `linkUserId?` -- when set, the callback links to this user instead
+  of creating a new account.
+
+No cookies. Cookies on cross-site OAuth redirects collide with
+`SameSite=Strict` (cookie dropped) and `SameSite=Lax` (still need
+`Secure` in production). A signed JWT in the URL is stateless,
+identical across browsers, and immune to those edge cases.
+
+### Email collision policy
+
+Auto-link **only** when BOTH:
+
+1. the OAuth provider asserts `email_verified: true` (Google always;
+   GitHub via primary+verified email; Apple always on first grant;
+   Microsoft via `xms_edov` claim), AND
+2. the existing local user's `users.email_verified_at` is NOT NULL.
+
+Otherwise the callback throws `OAuthEmailCollisionRequiresLogin`
+(HTTP 422). The user must sign in via their existing method (password,
+or another linked OAuth identity) and call `POST /auth/oauth/:p/link`
+to add the new identity to their account.
+
+This blocks the unverified-email account-takeover documented in OAuth
+security literature: an attacker registers a Google account with a
+victim's email, claims `email_verified: true` (Google does the actual
+verification), then "auto-links" into the victim's local user.
+
+### Identity table invariants
+
+- `UNIQUE (provider, provider_user_id)` -- the natural key.
+  `provider_user_id` is stable across email rotations; `email` is not.
+- `UNIQUE (user_id, provider)` -- one Google identity per user, one
+  GitHub identity per user. Users can stack identities across providers
+  but not within a single provider.
+- Non-unique `(provider, lower(email))` index for collision lookup.
+
+### Apple re-grant gotcha (deferred to P3)
+
+Apple sends `email` ONLY on the first authorization. Subsequent sign-ins
+return `sub` only. The auth service falls back to "look up by
+`(provider='apple', provider_user_id=sub)`" -- the `sub` claim is
+stable across grants. If both lookup and email are missing on a
+brand-new identity, the callback throws `OAuthEmailMissing` and the
+user is told to revoke + reauthorize at appleid.apple.com.
+
+### Provider refresh tokens are NOT stored
+
+Provider OAuth is identity-assertion only -- we issue our own
+JWT access/refresh pair. If/when "import contacts from Google" or
+similar provider-API features land, store at THAT time in a separate
+`oauth_grants` table keyed to a specific scope/feature, not on
+`user_identities`.
+
+### Adding a new provider
+
+1. Create `src/oauth/providers/<name>.ts` implementing the
+   `OAuthProvider` interface (`buildAuthorizeUrl` + `exchangeCode` +
+   `fetchProfile`).
+2. Register it in `src/oauth/registry.ts`.
+3. Add `<NAME>_CLIENT_ID` and `<NAME>_CLIENT_SECRET` to
+   `oauthConfigSchema` in `src/config.ts`.
+4. Add the provider to the `provider` CHECK constraint in the
+   `user_identities` migration if the kit doesn't already reserve it.
+
+### Wiring sketch (in services/api)
+
+```ts
+import { createOAuthProviderRegistry } from '@kit/auth/oauth';
+
+const oauthRegistry = createOAuthProviderRegistry({
+  GOOGLE_CLIENT_ID: config.GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET: config.GOOGLE_CLIENT_SECRET,
+  GITHUB_CLIENT_ID: config.GITHUB_CLIENT_ID,
+  GITHUB_CLIENT_SECRET: config.GITHUB_CLIENT_SECRET,
+});
+
+const container = await createContainer({
+  // ...
+  extraValues: { /* ... */ oauthRegistry },
+  // userIdentitiesRepository auto-discovered from
+  // services/api/src/modules/auth/user-identities.repository.ts
+});
+```
+
+The OAuth routes (`services/api/src/modules/auth/oauth.route.ts`) are
+auto-loaded under `/auth/oauth/...`. They consume `oauthRegistry`,
+`userIdentitiesRepository`, `userStore`, and `tokenService` from the
+cradle.

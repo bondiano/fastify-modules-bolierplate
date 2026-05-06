@@ -1,0 +1,92 @@
+{
+  "name": "@kit/mailer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "import": "./dist/config.js"
+    },
+    "./schema": {
+      "types": "./dist/schema.d.ts",
+      "import": "./dist/schema.js"
+    },
+    "./repository": {
+      "types": "./dist/mail-deliveries-repository.d.ts",
+      "import": "./dist/mail-deliveries-repository.js"
+    },
+    "./transport": {
+      "types": "./dist/transports/index.d.ts",
+      "import": "./dist/transports/index.js"
+    },
+    "./webhooks": {
+      "types": "./dist/webhooks/index.d.ts",
+      "import": "./dist/webhooks/index.js"
+    },
+    "./templates": {
+      "types": "./dist/templates/index.d.ts",
+      "import": "./dist/templates/index.js"
+    },
+    "./provider": {
+      "types": "./dist/provider.d.ts",
+      "import": "./dist/provider.js"
+    }
+  },
+  "files": [
+    "dist",
+    "migrations"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && pnpm run build:templates",
+    "build:templates": "node --experimental-strip-types --no-warnings=ExperimentalWarning tools/compile-mjml.ts",
+    "dev": "tsc -p tsconfig.json --watch",
+    "lint": "eslint .",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@kit/core": "workspace:*",
+    "@kit/db": "workspace:*",
+    "@kit/errors": "workspace:*",
+    "@kit/jobs": "workspace:*",
+    "@kit/tenancy": "workspace:*",
+    "awilix": "^13.0.3",
+    "kysely": "^0.28.16",
+    "mjml": "^4.16.1",
+    "zod": "^4.3.6"
+  },
+  "peerDependencies": {
+    "@aws-sdk/client-sesv2": "^3.0.0",
+    "fastify": "^5.0.0",
+    "ioredis": "^5.0.0",
+    "nodemailer": "^7.0.0",
+    "postmark": "^4.0.0",
+    "resend": "^6.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@aws-sdk/client-sesv2": { "optional": true },
+    "nodemailer": { "optional": true },
+    "postmark": { "optional": true },
+    "resend": { "optional": true }
+  },
+  "devDependencies": {
+    "@kit/eslint-config": "workspace:*",
+    "@kit/test": "workspace:*",
+    "@kit/ts-config": "workspace:*",
+    "@types/mjml": "^4.7.4",
+    "@types/node": "^25.6.0",
+    "@types/nodemailer": "^7.0.0",
+    "fastify": "^5.8.4",
+    "ioredis": "^5.10.1",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.4"
+  }
+}

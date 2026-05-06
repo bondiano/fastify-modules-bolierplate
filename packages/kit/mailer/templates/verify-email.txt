@@ -1,0 +1,9 @@
+Confirm your email for {{productName}}.
+
+Please confirm that {{email}} is your email address by opening the link below:
+
+{{verifyUrl}}
+
+This link expires on {{expiresAt}}.
+
+If you did not create an account you can safely ignore this email.

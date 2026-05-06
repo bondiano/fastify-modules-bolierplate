@@ -1,0 +1,8 @@
+Receipt for {{productName}}
+
+Hi {{customerName}}, thanks for your payment.
+
+Your invoice {{invoiceNumber}} totalling {{amount}} has been paid in full.
+
+View invoice: {{hostedUrl}}
+PDF copy: {{pdfUrl}}

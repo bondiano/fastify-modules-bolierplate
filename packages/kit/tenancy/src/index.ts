@@ -1,6 +1,9 @@
 export * from './context.js';
 export * from './errors.js';
-export * from './invitation-template.js';
+// `invitation-template.ts` was moved to `@kit/mailer/templates/tenant-invitation`
+// in P2.mailer.11 (2026-05-06). The kit-side rendering helpers + the
+// `KitMailMessage` interface live there now; this package no longer
+// re-exports them.
 export * from './invitations-repository.js';
 export * from './memberships-repository.js';
 export * from './memberships-service.js';

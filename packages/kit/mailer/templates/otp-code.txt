@@ -1,0 +1,9 @@
+Your verification code for {{productName}}.
+
+Use this one-time code to continue signing in:
+
+{{code}}
+
+The code expires on {{expiresAt}}.
+
+If you did not request this you can safely ignore this email.

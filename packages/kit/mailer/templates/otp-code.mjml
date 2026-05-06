@@ -1,0 +1,28 @@
+<mjml>
+  <mj-head>
+    <mj-title>Your verification code</mj-title>
+    <mj-attributes>
+      <mj-all font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" />
+      <mj-text line-height="1.5" color="#1f2933" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#f5f7fa">
+    <mj-section padding="32px 0">
+      <mj-column>
+        <mj-text font-size="22px" font-weight="600">Your verification code</mj-text>
+        <mj-text>
+          Use this one-time code to continue signing in to <strong>{{productName}}</strong>.
+        </mj-text>
+        <mj-text font-size="32px" font-weight="700" letter-spacing="0.18em" font-family="ui-monospace, monospace" align="center">
+          {{code}}
+        </mj-text>
+        <mj-text color="#52606d" font-size="13px">
+          The code expires on {{expiresAt}}.
+        </mj-text>
+        <mj-text color="#52606d" font-size="13px">
+          If you did not request this you can safely ignore this email.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

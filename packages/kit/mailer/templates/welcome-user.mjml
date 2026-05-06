@@ -1,0 +1,26 @@
+<mjml>
+  <mj-head>
+    <mj-title>Welcome to {{productName}}</mj-title>
+    <mj-attributes>
+      <mj-all font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" />
+      <mj-text line-height="1.5" color="#1f2933" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#f5f7fa">
+    <mj-section padding="32px 0">
+      <mj-column>
+        <mj-text font-size="24px" font-weight="600">Welcome to {{productName}}, {{name}}.</mj-text>
+        <mj-text>
+          Your account is ready. Open the dashboard to finish setting up your workspace.
+        </mj-text>
+        <mj-button href="{{dashboardUrl}}" background-color="#0b5fff" color="#ffffff">
+          Open dashboard
+        </mj-button>
+        <mj-text color="#52606d" font-size="13px">
+          If the button does not work, paste this link in your browser: <br />
+          <a href="{{dashboardUrl}}">{{dashboardUrl}}</a>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

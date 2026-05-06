@@ -1,0 +1,9 @@
+You're invited to join {{tenantName}} on {{productName}}.
+
+{{inviter}} invited you to join {{tenantName}} as {{role}}. Open the link below to accept:
+
+{{acceptUrl}}
+
+The invitation expires on {{expiresAt}}.
+
+If you did not expect this email you can safely ignore it.

@@ -1,0 +1,30 @@
+<mjml>
+  <mj-head>
+    <mj-title>You're invited to join {{tenantName}}</mj-title>
+    <mj-attributes>
+      <mj-all font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" />
+      <mj-text line-height="1.5" color="#1f2933" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#f5f7fa">
+    <mj-section padding="32px 0">
+      <mj-column>
+        <mj-text font-size="22px" font-weight="600">You're invited to join {{tenantName}}</mj-text>
+        <mj-text>
+          {{inviter}} invited you to join <strong>{{tenantName}}</strong> on
+          <strong>{{productName}}</strong> as <strong>{{role}}</strong>.
+        </mj-text>
+        <mj-button href="{{acceptUrl}}" background-color="#0b5fff" color="#ffffff">
+          Accept invitation
+        </mj-button>
+        <mj-text color="#52606d" font-size="13px">
+          The invitation expires on {{expiresAt}}. If the button does not work, paste this URL into your browser: <br />
+          <a href="{{acceptUrl}}">{{acceptUrl}}</a>
+        </mj-text>
+        <mj-text color="#52606d" font-size="13px">
+          If you did not expect this email you can safely ignore it.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

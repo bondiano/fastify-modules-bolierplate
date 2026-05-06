@@ -1,13 +1,18 @@
-import { authConfigSchema } from '@kit/auth/config';
+import { authConfigSchema, oauthConfigSchema } from '@kit/auth/config';
+import { billingConfigSchema } from '@kit/billing/config';
 import { createConfig, findWorkspaceRoot, z } from '@kit/config';
 import { dbConfigSchema } from '@kit/db/config';
 import { jobsConfigSchema } from '@kit/jobs/config';
+import { mailerConfigSchema } from '@kit/mailer/config';
 
 export const config = createConfig(
   {
     ...dbConfigSchema,
     ...authConfigSchema,
+    ...oauthConfigSchema,
     ...jobsConfigSchema,
+    ...mailerConfigSchema,
+    ...billingConfigSchema,
     CORS_ORIGINS: z.string().default('*'),
     /**
      * Public-facing URL of the API. Used to build absolute links in

@@ -33,3 +33,29 @@ export type AuthConfig = {
   OTP_TTL_MIN: number;
   OTP_MAX_ATTEMPTS: number;
 };
+
+/**
+ * OAuth config fragment. Merge alongside `authConfigSchema` via
+ * `createConfig({ ...authConfigSchema, ...oauthConfigSchema })`.
+ *
+ * Per-provider client id + secret are optional -- the registry only
+ * instantiates a provider when both are present. Apple + Microsoft
+ * are scaffolded for `P3.social.*` but the kit's v1 only ships
+ * Google + GitHub.
+ */
+export const oauthConfigSchema = {
+  /** Public-facing redirect URI base. The kit appends `/auth/oauth/:p/callback`. */
+  OAUTH_REDIRECT_BASE_URL: z.string().url().optional(),
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GITHUB_CLIENT_ID: z.string().optional(),
+  GITHUB_CLIENT_SECRET: z.string().optional(),
+};
+
+export type OAuthConfig = {
+  OAUTH_REDIRECT_BASE_URL: string | undefined;
+  GOOGLE_CLIENT_ID: string | undefined;
+  GOOGLE_CLIENT_SECRET: string | undefined;
+  GITHUB_CLIENT_ID: string | undefined;
+  GITHUB_CLIENT_SECRET: string | undefined;
+};

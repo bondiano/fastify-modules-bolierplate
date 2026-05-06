@@ -114,6 +114,41 @@ export interface OtpCodeStore {
   pruneExpired(now: Date): Promise<{ deleted: number }>;
 }
 
+// -------------------------------------------------------------------------
+// OAuth identities (P2.social.*)
+// -------------------------------------------------------------------------
+
+export interface UserIdentityRow {
+  readonly id: string;
+  readonly userId: string;
+  readonly provider: 'google' | 'github' | 'apple' | 'microsoft';
+  readonly providerUserId: string;
+  readonly email: string | null;
+  readonly emailVerified: boolean;
+  readonly rawProfile: Record<string, unknown>;
+  readonly createdAt: Date;
+}
+
+export interface CreateUserIdentityInput {
+  userId: string;
+  provider: 'google' | 'github' | 'apple' | 'microsoft';
+  providerUserId: string;
+  email: string | null;
+  emailVerified: boolean;
+  rawProfile: Record<string, unknown>;
+}
+
+export interface UserIdentitiesStore {
+  findByProviderUserId(
+    provider: string,
+    providerUserId: string,
+  ): Promise<UserIdentityRow | null>;
+  findByUserId(userId: string): Promise<readonly UserIdentityRow[]>;
+  create(input: CreateUserIdentityInput): Promise<UserIdentityRow>;
+  delete(id: string): Promise<void>;
+  countForUser(userId: string): Promise<number>;
+}
+
 /**
  * Redis-backed token blacklist for JWT revocation.
  *
